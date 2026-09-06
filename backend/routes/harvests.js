@@ -15,6 +15,30 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'hive_ids (array), beekeeper_id and quantity_kg are required' });
   }
 
+  const beekeeper = db.prepare('SELECT id FROM beekeepers WHERE id = ?').get(beekeeper_id);
+  if (!beekeeper) {
+    return res.status(400).json({ error: `Unknown beekeeper_id: ${beekeeper_id}` });
+  }
+
+  // hive_ids is stored as a JSON blob (a harvest can span multiple hives), so
+  // it isn't a real foreign-key column and SQLite's FK enforcement can't
+  // catch a bogus hive id here - we have to check it ourselves.
+  const placeholders = hive_ids.map(() => '?').join(',');
+  const foundHives = db.prepare(
+    `SELECT id, beekeeper_id FROM hives WHERE id IN (${placeholders})`
+  ).all(...hive_ids);
+
+  const foundIds = new Set(foundHives.map(h => h.id));
+  const missing = hive_ids.filter(id => !foundIds.has(id));
+  if (missing.length > 0) {
+    return res.status(400).json({ error: `Unknown hive_ids: ${missing.join(', ')}` });
+  }
+
+  const wrongOwner = foundHives.filter(h => h.beekeeper_id !== beekeeper_id).map(h => h.id);
+  if (wrongOwner.length > 0) {
+    return res.status(400).json({ error: `Hives not owned by beekeeper ${beekeeper_id}: ${wrongOwner.join(', ')}` });
+  }
+
   const harvestId = 'HV-' + uuidv4().slice(0, 8).toUpperCase();
   const date = new Date().toISOString();
 

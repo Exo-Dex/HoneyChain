@@ -1,14 +1,11 @@
 const express = require('express');
 const db = require('../db/db');
 const { appendEvent, getEventsForBatch, verifyChain } = require('../services/ledger');
+const { assertAdvance, StateTransitionError } = require('../services/batchStateMachine');
 
 const router = express.Router();
 
-const ALLOWED_MANUAL_EVENTS = {
-  BATCH_RECEIVED: 'RECEIVED',
-  BATCH_PROCESSED: 'PROCESSED',
-  BATCH_PACKAGED: 'PACKAGED',
-};
+const ALLOWED_MANUAL_EVENTS = ['BATCH_RECEIVED', 'BATCH_PROCESSED'];
 
 function hydrateBatch(batch) {
   const harvest = db.prepare('SELECT * FROM harvests WHERE id = ?').get(batch.harvest_id);
@@ -46,20 +43,26 @@ router.get('/code/:code', (req, res) => {
 });
 
 // POST /api/batches/:id/advance
-// body: { event_type: 'BATCH_RECEIVED' | 'BATCH_PROCESSED' | 'BATCH_PACKAGED', actor, note }
-// Demo "hero workflow" buttons - each writes a real ledger event.
+// body: { event_type: 'BATCH_RECEIVED' | 'BATCH_PROCESSED', actor, note }
+// Demo "hero workflow" buttons - each writes a real ledger event. Server-side
+// state checks live in services/batchStateMachine.js so this can't be bypassed
+// by calling the API directly out of order (previously only the frontend
+// hid the buttons - it didn't actually stop anything).
 router.post('/:id/advance', (req, res) => {
   const batch = db.prepare('SELECT * FROM batches WHERE id = ?').get(req.params.id);
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
 
   const { event_type, actor, note } = req.body;
-  const newStatus = ALLOWED_MANUAL_EVENTS[event_type];
-  if (!newStatus) {
-    return res.status(400).json({ error: `event_type must be one of: ${Object.keys(ALLOWED_MANUAL_EVENTS).join(', ')}` });
+  if (!ALLOWED_MANUAL_EVENTS.includes(event_type)) {
+    return res.status(400).json({ error: `event_type must be one of: ${ALLOWED_MANUAL_EVENTS.join(', ')}` });
   }
 
-  if (batch.status === 'QUARANTINED') {
-    return res.status(409).json({ error: 'Batch is quarantined (failed quality test) and cannot advance.' });
+  let newStatus;
+  try {
+    newStatus = assertAdvance(batch, event_type);
+  } catch (err) {
+    if (err instanceof StateTransitionError) return res.status(err.statusCode).json({ error: err.message });
+    throw err;
   }
 
   const event = appendEvent({

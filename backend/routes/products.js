@@ -3,6 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const db = require('../db/db');
 const { appendEvent, verifyChain } = require('../services/ledger');
+const { assertActivateQr, StateTransitionError } = require('../services/batchStateMachine');
 
 const router = express.Router();       // mounted at /api/batches -> POST /:batchId/activate-qr
 const publicRouter = express.Router(); // mounted at /api        -> GET /verify/:qrToken
@@ -16,6 +17,13 @@ router.post('/:batchId/activate-qr', async (req, res) => {
   const existing = db.prepare('SELECT * FROM products WHERE batch_id = ?').get(batch.id);
   if (existing) {
     return res.status(200).json({ product: existing, already_activated: true });
+  }
+
+  try {
+    assertActivateQr(batch);
+  } catch (err) {
+    if (err instanceof StateTransitionError) return res.status(err.statusCode).json({ error: err.message });
+    throw err;
   }
 
   const id = uuidv4();

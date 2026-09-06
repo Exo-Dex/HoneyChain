@@ -28,7 +28,7 @@ Three demo capabilities, matching PS 26021's core asks:
 
 Everything else from the research phase (Madhukranti/KVIC integration, FPO
 marketplace, real lab APIs, batch split/merge genealogy, multi-role auth, trained
-ML models, real IoT hardware) is **deliberately out of scope** — see Section 8.
+ML models, real IoT hardware) is **deliberately out of scope** — see Section 9.
 
 ---
 
@@ -134,6 +134,20 @@ CREATED → RECEIVED → TESTED → PROCESSED → PACKAGED
               └──(fail)──→ QUARANTINED  (terminal — cannot advance)
 ```
 
+**Referential integrity:** `PRAGMA foreign_keys = ON` is set in `db.js`, and
+every child table has a real `FOREIGN KEY` constraint — `hives→apiaries`,
+`hives→beekeepers`, `harvests→beekeepers`, `batches→harvests`,
+`batch_events→batches`, `quality_tests→batches`, `products→batches`. The one
+exception is `harvests.hive_ids`, which is a JSON array (a harvest can span
+multiple hives) and therefore can't be a real FK column — `POST /api/harvests`
+checks each hive ID exists and belongs to the given beekeeper before inserting,
+since SQLite can't do that check for us here.
+
+**Indexes** beyond the automatic primary-key indexes exist on every foreign-key
+column (`hives.beekeeper_id`, `batch_events.batch_id`, `sensor_readings.hive_id`,
+etc.) — irrelevant at demo scale, but correct hygiene and necessary once this
+holds more than a handful of beekeepers.
+
 ---
 
 ## 4. The ledger — how "blockchain" actually works here
@@ -146,13 +160,22 @@ event N's hash = SHA256( event(N-1).hash + canonical(event N's fields) )
 ```
 
 - `appendEvent()` is the **only** way rows are ever written to `batch_events` —
-  never UPDATE or DELETE.
+  never UPDATE or DELETE. This is now enforced at two independent layers:
+  1. **Database-level**: `BEFORE UPDATE`/`BEFORE DELETE` triggers on
+     `batch_events` (in `schema.sql`) reject any direct edit outright, even
+     from a raw SQL client bypassing the application entirely.
+  2. **Cryptographic**: even if an attacker had elevated DB access and dropped
+     those triggers first, `verifyChain()` (below) would still catch the
+     tampering independently. Neither layer depends on the other.
 - `verifyChain()` recomputes every hash from genesis (`'0'.repeat(64)`) and
   compares against what's stored. Any tampering — even a single character in one
   event's payload — is detected and the exact broken event is named.
-- We proved this during development: manually corrupting a row's `payload`
-  directly in the SQLite file causes `verifyChain()` to correctly flag that exact
-  `seq` number as broken, while everything before and after remains valid.
+- We proved both layers during development: a direct `UPDATE` against
+  `batch_events` throws `batch_events is append-only: UPDATE is not permitted`
+  and never touches the row; and separately, dropping that trigger first and
+  then corrupting a row's `payload` causes `verifyChain()` to correctly flag
+  that exact `seq` number as broken, while everything before and after
+  remains valid.
 
 **Event vocabulary currently implemented:**
 
@@ -175,7 +198,28 @@ demo needs.
 
 ---
 
-## 5. AI layer
+## 5. Batch state machine — server-side enforcement
+
+Implemented in `backend/services/batchStateMachine.js`. An early version of
+this MVP only gated pipeline buttons in the frontend — a direct API call
+(Postman, curl, or a bug elsewhere) could skip straight from `CREATED` to
+`PACKAGED`, bypassing quality testing entirely. This is now enforced
+server-side, in one place, used by every route that changes a batch's status:
+
+```text
+CREATED → RECEIVED → TESTED → PROCESSED → PACKAGED
+              │
+              └──(fail)──→ QUARANTINED  (terminal — every route rejects further transitions)
+```
+
+- `assertAdvance(batch, eventType)` — used by `POST /batches/:id/advance`
+- `assertQualityTest(batch)` — used by `POST /batches/:batchId/quality-test`
+- `assertActivateQr(batch)` — used by `POST /batches/:batchId/activate-qr`
+
+All three are pure functions (`{ status } → void | throws`), so they're
+unit-tested directly with no database involved (see Section 12).
+
+## 6. AI layer
 
 Implemented in `backend/services/ai.js`. Two functions, both clearly labeled as
 predictions/heuristics — never diagnoses:
@@ -205,7 +249,7 @@ predictions/heuristics — never diagnoses:
 
 ---
 
-## 6. API reference
+## 7. API reference
 
 All routes under `/api`. Full detail in `backend/routes/*.js`.
 
@@ -228,7 +272,7 @@ All routes under `/api`. Full detail in `backend/routes/*.js`.
 
 ---
 
-## 7. Frontend
+## 8. Frontend
 
 React + Vite SPA, three personas as separate routes:
 
@@ -250,7 +294,7 @@ in `src/api.js`.
 
 ---
 
-## 8. Explicitly out of scope for this MVP
+## 9. Explicitly out of scope for this MVP
 
 Carried over from `mvp.txt`, unchanged:
 
@@ -267,7 +311,7 @@ Carried over from `mvp.txt`, unchanged:
 
 ---
 
-## 9. Extension points (designed-in, not yet built)
+## 10. Extension points (designed-in, not yet built)
 
 These were kept in mind while building so the MVP doesn't need a rewrite later:
 
@@ -287,7 +331,7 @@ These were kept in mind while building so the MVP doesn't need a rewrite later:
 
 ---
 
-## 10. Project file structure
+## 11. Project file structure
 
 ```text
 honey-chain-mvp/
@@ -295,38 +339,51 @@ honey-chain-mvp/
 ├── architecture.md           # this file
 ├── backend/
 │   ├── package.json
-│   ├── server.js              # Express entrypoint, mounts all routes
+│   ├── server.js              # Express entrypoint; exports `app` for tests, listens when run directly
 │   ├── db/
-│   │   ├── schema.sql          # full DDL, all 9 tables
-│   │   ├── db.js               # node:sqlite connection + transaction shim
+│   │   ├── schema.sql          # full DDL: 9 tables + indexes + append-only triggers
+│   │   ├── db.js               # node:sqlite connection + transaction shim (path configurable via env)
 │   │   └── seed.js             # demo data: Ramesh Patil + 6 hives
 │   ├── services/
-│   │   ├── ledger.js            # hash-chained event ledger
-│   │   ├── ai.js                 # health score + yield prediction
-│   │   └── simulator.js           # mock IoT sensor generator
-│   └── routes/
-│       ├── beekeepers.js
-│       ├── hives.js
-│       ├── harvests.js
-│       ├── batches.js
-│       ├── quality.js
-│       └── products.js            # QR activation + public verify
+│   │   ├── ledger.js              # hash-chained event ledger
+│   │   ├── batchStateMachine.js    # server-side transition rules (pure functions)
+│   │   ├── ai.js                    # health score + yield prediction
+│   │   ├── simulator.js              # mock IoT sensor generator
+│   │   ├── hiveEnrichment.js          # shared health/yield enrichment (hives.js + alerts.js)
+│   │   └── certificatePdf.js           # shared PDF rendering (admin + public verify routes)
+│   ├── routes/
+│   │   ├── beekeepers.js
+│   │   ├── hives.js
+│   │   ├── harvests.js                # validates hive/beekeeper existence before writing
+│   │   ├── batches.js                  # advance uses batchStateMachine
+│   │   ├── quality.js                   # quality-test uses batchStateMachine
+│   │   ├── products.js                   # QR activation (state-checked) + public verify
+│   │   ├── certificate.js                 # PDF certificate, admin + public routes
+│   │   ├── alerts.js                       # cluster-wide flagged-hive feed
+│   │   └── ledger.js                        # global ledger explorer endpoint
+│   └── test/
+│       ├── batchStateMachine.test.js         # pure unit tests, no DB
+│       ├── ledger.test.js                     # trigger + hash-chain tamper detection
+│       └── api.test.js                         # full HTTP integration tests
 └── frontend/
     └── src/
         ├── api.js                  # fetch wrapper for all backend calls
         ├── App.jsx                  # router
         ├── index.css                 # honey/amber theme
+        ├── lib/currentBeekeeper.js     # localStorage-backed current-beekeeper selection
         ├── components/TopBar.jsx
         └── pages/
-            ├── BeekeeperDashboard.jsx
+            ├── BeekeeperDashboard.jsx     # + beekeeper switcher/registration
             ├── HiveDetail.jsx
-            ├── AdminBatchPipeline.jsx
-            └── ConsumerScan.jsx
+            ├── AdminBatchPipeline.jsx      # + certificate download
+            ├── ConsumerScan.jsx             # + certificate download
+            ├── ClusterAlerts.jsx             # cross-hive alerts across all beekeepers
+            └── LedgerExplorer.jsx             # global ledger timeline
 ```
 
 ---
 
-## 11. The demo script (hero workflow)
+## 12. The demo script (hero workflow) and automated tests
 
 1. **Beekeeper** → open a healthy hive and a critical hive side by side; show the
    AI health score and yield prediction reacting live via the "Simulate: Critical"
@@ -338,7 +395,30 @@ honey-chain-mvp/
    QR. Point out the journey view growing a new hash-linked entry at each step.
 4. **Consumer Scan** → paste the batch code → full provenance + a green "all
    events verified" integrity check.
-5. **The proof moment**: tamper with one ledger row directly in the database file,
-   re-run the consumer verify, and show it naming the exact broken event. This is
-   the single strongest thing to show a judge — it's a genuine security property,
-   not a UI claim.
+5. **The proof moment (now two-part)**: first attempt a direct `UPDATE` on
+   `batch_events` — it's rejected by the append-only DB trigger. Then simulate
+   an attacker with elevated DB access by dropping that trigger first and
+   tampering again — the consumer verify / Ledger tab now catches it via the
+   hash-chain instead. Two independent layers, demonstrated live.
+6. **Try to break it via the API directly** (curl/Postman, not the UI): attempt
+   `activate-qr` on a freshly-created batch, or `quality-test` before
+   `advance(BATCH_RECEIVED)`. Both are rejected with a clear error — this is
+   what separates "the buttons happen to be in the right order" from an
+   actually-enforced state machine.
+
+### Automated tests
+
+`cd backend && npm test` runs 21 tests via Node's built-in test runner (zero
+extra dependencies):
+
+- `test/batchStateMachine.test.js` — pure unit tests of every transition rule
+  and rejection case in `services/batchStateMachine.js`
+- `test/ledger.test.js` — append-only trigger enforcement, and hash-chain
+  tamper detection once that protection is deliberately bypassed
+- `test/api.test.js` — full HTTP integration tests against the real Express
+  app on an ephemeral port: unknown hive/beekeeper rejection, out-of-order
+  rejection, quarantine blocking further progress, and the full happy path
+  end to end, finishing with a whole-ledger integrity check
+
+Tests run against an isolated SQLite file under `backend/test/` (via the
+`HONEYCHAIN_DB_PATH` env var), never the dev/demo database.

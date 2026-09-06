@@ -32,6 +32,14 @@ app.use('/api/alerts', alertsRoute);
 app.use('/api/ledger', ledgerRoute);
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`Honey Chain backend running on http://localhost:${PORT}`);
-});
+
+// Only actually bind to a port when run directly (`node server.js`) - this
+// lets test files `require('./server')` to get the configured `app` and
+// mount it on an ephemeral port themselves, without double-binding :4000.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Honey Chain backend running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;

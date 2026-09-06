@@ -2,6 +2,7 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/db');
 const { appendEvent } = require('../services/ledger');
+const { assertQualityTest, StateTransitionError } = require('../services/batchStateMachine');
 
 const router = express.Router();
 
@@ -19,6 +20,13 @@ const THRESHOLDS = {
 router.post('/:batchId/quality-test', (req, res) => {
   const batch = db.prepare('SELECT * FROM batches WHERE id = ?').get(req.params.batchId);
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
+
+  try {
+    assertQualityTest(batch);
+  } catch (err) {
+    if (err instanceof StateTransitionError) return res.status(err.statusCode).json({ error: err.message });
+    throw err;
+  }
 
   const rand = (min, max) => Math.round((min + Math.random() * (max - min)) * 10) / 10;
 

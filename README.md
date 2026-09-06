@@ -96,6 +96,19 @@ You'll see an `ExperimentalWarning: SQLite is an experimental feature` line when
 backend starts — that's expected and harmless, just Node flagging that `node:sqlite`
 is still evolving upstream.
 
+### Running the backend tests
+
+```bash
+cd backend
+npm test
+```
+
+Runs 21 tests (`node --test`, no extra dependencies) covering: the batch state
+machine's transition rules, append-only ledger enforcement, tamper detection via
+the hash-chain, and full HTTP integration tests against the real Express app
+(out-of-order requests, quarantine blocking, and the happy path end to end). Tests
+use an isolated SQLite file under `backend/test/`, never the dev/demo database.
+
 ## Demo script (the "hero workflow")
 
 1. **Beekeeper** tab → open hive `H-001` (Healthy) or `H-006` (Critical) → show the
@@ -118,18 +131,34 @@ is still evolving upstream.
    on the Beekeeper tab) with a hive in a "Critical" simulated profile, then check
    this tab shows flagged hives across *both* beekeepers, sorted worst-first —
    this is the KVIC/cluster-administrator view.
-7. **The tamper-evidence proof** (strongest demo moment): stop the server, open
-   `backend/db/honeychain.db` and edit any `batch_events` row directly (or run the
-   snippet below), then re-run the consumer verify or the Ledger tab — it will
-   name the exact broken event.
+7. **The two-layer tamper-evidence proof** (strongest demo moment — now a two-part story):
 
-```bash
-cd backend
-node -e "
-const db = require('./db/db');
-db.prepare(\"UPDATE batch_events SET payload = '{}' WHERE seq = 3\").run();
-"
-```
+   **Part A — the database itself refuses to be tampered with.** `batch_events`
+   has `BEFORE UPDATE`/`BEFORE DELETE` triggers that reject any direct edit,
+   independent of the application:
+   ```bash
+   cd backend
+   node -e "
+   const db = require('./db/db');
+   db.prepare(\"UPDATE batch_events SET payload = '{}' WHERE seq = 3\").run();
+   "
+   ```
+   This throws `batch_events is append-only: UPDATE is not permitted` — the edit
+   never happens.
+
+   **Part B — even if that protection were bypassed, the hash-chain still catches it.**
+   Simulate an attacker with elevated DB access who disables the trigger first:
+   ```bash
+   cd backend
+   node -e "
+   const db = require('./db/db');
+   db.exec('DROP TRIGGER IF EXISTS trg_batch_events_no_update');
+   db.prepare(\"UPDATE batch_events SET payload = '{\\\"tampered\\\":true}' WHERE seq = 3\").run();
+   "
+   ```
+   Now re-run the consumer verify or the Ledger tab — it will name the exact
+   broken event, because the hash-chain is a second, independent line of
+   defense that doesn't rely on the trigger being intact.
 
 ## Feature list (as of this version)
 
@@ -137,15 +166,33 @@ db.prepare(\"UPDATE batch_events SET payload = '{}' WHERE seq = 3\").run();
 |---|---|
 | Hive registration + simulated IoT sensors | Beekeeper tab |
 | AI health score + yield prediction | Beekeeper tab → hive detail |
-| Harvest recording → batch creation | Beekeeper tab → hive detail |
-| Batch pipeline (received/tested/processed/packaged) | Processing / Lab tab |
-| Hash-chained ledger with live tamper-evidence check | Processing / Lab, Ledger, Consumer Scan tabs |
+| Harvest recording → batch creation (validates hive/beekeeper exist) | Beekeeper tab → hive detail |
+| Batch pipeline with **server-side state-order enforcement** | Processing / Lab tab |
+| Hash-chained, **append-only** (DB triggers) ledger with live tamper-evidence check | Processing / Lab, Ledger, Consumer Scan tabs |
 | QR generation + consumer verification | Processing / Lab → Consumer Scan tabs |
-| **Downloadable PDF certificate of provenance** | Processing / Lab tab and Consumer Scan tab |
-| **Global ledger explorer** (all events, all batches, one timeline) | Ledger tab |
-| **Cross-hive cluster alerts** (flagged hives across all beekeepers) | Cluster Alerts tab |
-| **Beekeeper registration + switching** | Beekeeper tab (top-right) |
+| Downloadable PDF certificate of provenance | Processing / Lab tab and Consumer Scan tab |
+| Global ledger explorer (all events, all batches, one timeline) | Ledger tab |
+| Cross-hive cluster alerts (flagged hives across all beekeepers) | Cluster Alerts tab |
+| Beekeeper registration + switching | Beekeeper tab (top-right) |
+| Automated tests (`npm test`) covering state enforcement + tamper detection | `backend/test/` |
 
+## Security & scope tradeoffs (decisions, not oversights)
+
+These are deliberate MVP-scope calls, documented here so they read as
+decisions if a judge asks, not as things we forgot:
+
+| Not included | Why | What we'd add for production |
+|---|---|---|
+| Authentication / RBAC | Out of scope per `mvp.txt` — a hackathon demo doesn't need login walls to prove the traceability concept | Real beekeeper/lab/admin accounts with role-scoped permissions (the actor × permission matrix sketched in `deep-search_honeyChain.txt` §24) |
+| Rate limiting / HTTPS | Local demo only, no public-internet exposure | Standard API gateway concerns for a real deployment |
+| SQLite instead of Postgres | Zero-setup, zero native compilation (see the Windows `better-sqlite3` saga in git history) | Postgres for real concurrent multi-cluster write load |
+| No batch split/merge genealogy | Deliberately trimmed from `mvp.txt`'s scope | Schema and event vocabulary already anticipate it (see `architecture.md` §9) |
+
+What **is** enforced, despite the above: server-side state-order validation
+(you cannot skip pipeline steps via a direct API call, only via the UI), DB-level
+append-only protection on the ledger, foreign-key referential integrity, and
+input validation that hive/beekeeper IDs actually exist before a harvest is
+recorded.
 
 ## What's deliberately out of scope for this MVP
 

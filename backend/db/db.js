@@ -5,7 +5,7 @@ const { DatabaseSync } = require('node:sqlite');
 // Uses Node's built-in SQLite (no native compilation required - avoids the
 // better-sqlite3/node-gyp/Visual-Studio pain on Windows). Requires Node 22.5+.
 
-const DB_PATH = path.join(__dirname, 'honeychain.db');
+const DB_PATH = process.env.HONEYCHAIN_DB_PATH || path.join(__dirname, 'honeychain.db');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 
 const db = new DatabaseSync(DB_PATH);

@@ -116,3 +116,38 @@ CREATE TABLE IF NOT EXISTS products (
   activated_at TEXT,
   FOREIGN KEY (batch_id) REFERENCES batches(id)
 );
+
+-- ── Indexes ──────────────────────────────────────────────────────────────
+-- SQLite only auto-indexes PRIMARY KEY / UNIQUE columns; foreign-key columns
+-- get no index by default. Irrelevant at demo scale, but correct hygiene and
+-- required once this holds more than a handful of beekeepers.
+CREATE INDEX IF NOT EXISTS idx_apiaries_beekeeper ON apiaries(beekeeper_id);
+CREATE INDEX IF NOT EXISTS idx_hives_beekeeper ON hives(beekeeper_id);
+CREATE INDEX IF NOT EXISTS idx_hives_apiary ON hives(apiary_id);
+CREATE INDEX IF NOT EXISTS idx_sensor_readings_hive ON sensor_readings(hive_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_harvests_beekeeper ON harvests(beekeeper_id);
+CREATE INDEX IF NOT EXISTS idx_batches_harvest ON batches(harvest_id);
+CREATE INDEX IF NOT EXISTS idx_batch_events_batch ON batch_events(batch_id, seq);
+CREATE INDEX IF NOT EXISTS idx_quality_tests_batch ON quality_tests(batch_id);
+CREATE INDEX IF NOT EXISTS idx_products_batch ON products(batch_id);
+
+-- ── Append-only enforcement ──────────────────────────────────────────────
+-- The ledger's trust story depends on batch_events never being modified
+-- after the fact. appendEvent() in services/ledger.js already never issues
+-- UPDATE/DELETE against this table - these triggers make that a database-
+-- level guarantee instead of just an application convention, so even a raw
+-- SQL client (or a bug elsewhere in the codebase) can't silently rewrite
+-- history. The hash-chain in services/ledger.js remains a second, independent
+-- line of defense: even if these triggers were dropped by someone with
+-- elevated DB access, verifyChain() would still detect the tampering.
+CREATE TRIGGER IF NOT EXISTS trg_batch_events_no_update
+BEFORE UPDATE ON batch_events
+BEGIN
+  SELECT RAISE(ABORT, 'batch_events is append-only: UPDATE is not permitted');
+END;
+
+CREATE TRIGGER IF NOT EXISTS trg_batch_events_no_delete
+BEFORE DELETE ON batch_events
+BEGIN
+  SELECT RAISE(ABORT, 'batch_events is append-only: DELETE is not permitted');
+END;
