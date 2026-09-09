@@ -14,7 +14,13 @@ const { appendEvent, verifyChain } = require('../services/ledger');
 function cleanupDbFiles() {
   for (const ext of ['', '-shm', '-wal']) {
     const p = TEST_DB + ext;
-    if (fs.existsSync(p)) fs.unlinkSync(p);
+    try {
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    } catch (err) {
+      // Windows can briefly hold a lock on the file even right after close();
+      // this is just temp test data, so don't fail the suite over cleanup.
+      console.warn(`Warning: could not remove ${p}: ${err.message}`);
+    }
   }
 }
 
@@ -67,5 +73,8 @@ test('verifyChain detects tampering if append-only protection is bypassed', () =
 });
 
 test.after(() => {
+  // Windows locks the file while the connection is open - close it first so
+  // the unlink below doesn't fail with EBUSY (harmless on Linux/macOS either way).
+  try { db.close(); } catch { /* already closed or never opened */ }
   cleanupDbFiles();
 });
