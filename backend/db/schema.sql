@@ -7,7 +7,19 @@ CREATE TABLE IF NOT EXISTS beekeepers (
   district TEXT,
   state TEXT,
   phone TEXT,
-  verified INTEGER DEFAULT 1 -- demo: pre-verified
+  verified INTEGER DEFAULT 0 -- 0 until a Cluster Admin approves; see users.role='admin'
+);
+
+-- Login accounts. Separate from `beekeepers` because a lab/admin user has no
+-- beekeeper profile at all - beekeeper_id is only ever set for role='beekeeper'.
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('beekeeper', 'lab', 'admin')),
+  beekeeper_id TEXT,
+  created_at TEXT NOT NULL,
+  FOREIGN KEY (beekeeper_id) REFERENCES beekeepers(id)
 );
 
 CREATE TABLE IF NOT EXISTS apiaries (
@@ -122,6 +134,8 @@ CREATE TABLE IF NOT EXISTS products (
 -- get no index by default. Irrelevant at demo scale, but correct hygiene and
 -- required once this holds more than a handful of beekeepers.
 CREATE INDEX IF NOT EXISTS idx_apiaries_beekeeper ON apiaries(beekeeper_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_beekeeper ON users(beekeeper_id);
 CREATE INDEX IF NOT EXISTS idx_hives_beekeeper ON hives(beekeeper_id);
 CREATE INDEX IF NOT EXISTS idx_hives_apiary ON hives(apiary_id);
 CREATE INDEX IF NOT EXISTS idx_sensor_readings_hive ON sensor_readings(hive_id, timestamp);

@@ -2,22 +2,25 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/db');
 const { appendEvent } = require('../services/ledger');
+const { requireAuth, requireRole, requireVerifiedBeekeeper } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth);
 
 // POST /api/harvests
-// body: { hive_ids: [...], beekeeper_id, quantity_kg, floral_source, location }
-// Creates the Harvest AND the resulting Batch, and writes both events to the ledger.
-router.post('/', (req, res) => {
-  const { hive_ids, beekeeper_id, quantity_kg, floral_source, location } = req.body;
+// body: { hive_ids: [...], quantity_kg, floral_source, location }
+// beekeeper_id is ALWAYS taken from the logged-in session, never from the
+// request body - previously a client could pass any beekeeper_id it liked.
+// Gated by requireVerifiedBeekeeper: this is the actual enforcement point
+// behind the "pending verification" story - an unverified beekeeper can
+// register hives and watch sensor data, but cannot enter anything into the
+// traceability chain until a Cluster Admin approves their account.
+router.post('/', requireRole('beekeeper'), requireVerifiedBeekeeper, (req, res) => {
+  const { hive_ids, quantity_kg, floral_source, location } = req.body;
+  const beekeeper_id = req.user.beekeeper_id;
 
-  if (!Array.isArray(hive_ids) || hive_ids.length === 0 || !beekeeper_id || !quantity_kg) {
-    return res.status(400).json({ error: 'hive_ids (array), beekeeper_id and quantity_kg are required' });
-  }
-
-  const beekeeper = db.prepare('SELECT id FROM beekeepers WHERE id = ?').get(beekeeper_id);
-  if (!beekeeper) {
-    return res.status(400).json({ error: `Unknown beekeeper_id: ${beekeeper_id}` });
+  if (!Array.isArray(hive_ids) || hive_ids.length === 0 || !quantity_kg) {
+    return res.status(400).json({ error: 'hive_ids (array) and quantity_kg are required' });
   }
 
   // hive_ids is stored as a JSON blob (a harvest can span multiple hives), so
@@ -36,7 +39,7 @@ router.post('/', (req, res) => {
 
   const wrongOwner = foundHives.filter(h => h.beekeeper_id !== beekeeper_id).map(h => h.id);
   if (wrongOwner.length > 0) {
-    return res.status(400).json({ error: `Hives not owned by beekeeper ${beekeeper_id}: ${wrongOwner.join(', ')}` });
+    return res.status(403).json({ error: `You do not own these hives: ${wrongOwner.join(', ')}` });
   }
 
   const harvestId = 'HV-' + uuidv4().slice(0, 8).toUpperCase();
@@ -81,11 +84,11 @@ router.post('/', (req, res) => {
   });
 });
 
-// GET /api/harvests?beekeeper_id=...
+// GET /api/harvests - beekeepers see only their own; lab/admin see all
+// (lab needs this for context on what's coming through the pipeline).
 router.get('/', (req, res) => {
-  const { beekeeper_id } = req.query;
-  const rows = beekeeper_id
-    ? db.prepare('SELECT * FROM harvests WHERE beekeeper_id = ? ORDER BY date DESC').all(beekeeper_id)
+  const rows = req.user.role === 'beekeeper'
+    ? db.prepare('SELECT * FROM harvests WHERE beekeeper_id = ? ORDER BY date DESC').all(req.user.beekeeper_id)
     : db.prepare('SELECT * FROM harvests ORDER BY date DESC').all();
 
   res.json(rows.map(r => ({ ...r, hive_ids: JSON.parse(r.hive_ids) })));

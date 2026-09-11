@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 export default function HiveDetail() {
   const { hiveId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [hive, setHive] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,10 +42,8 @@ export default function HiveDetail() {
     try {
       const result = await api.createHarvest({
         hive_ids: [hiveId],
-        beekeeper_id: hive.beekeeper_id,
         quantity_kg: parseFloat(quantity),
         floral_source: floralSource,
-        location: 'Pune, Maharashtra',
       });
       setHarvestResult(result);
       setShowHarvest(false);
@@ -161,13 +161,19 @@ export default function HiveDetail() {
         </div>
 
         <div className="btn-row">
-          <button className="btn" onClick={() => setShowHarvest(s => !s)}>
+          <button className="btn" disabled={!user?.beekeeper?.verified} onClick={() => setShowHarvest(s => !s)} title={!user?.beekeeper?.verified ? 'Your account is pending admin verification' : ''}>
             {showHarvest ? 'Cancel' : '🍯 Record Harvest'}
           </button>
           <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('healthy')}>Simulate: Healthy</button>
           <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('attention')}>Simulate: Attention</button>
           <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('critical')}>Simulate: Critical</button>
         </div>
+
+        {!user?.beekeeper?.verified && (
+          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 6 }}>
+            ⏳ Recording harvests is disabled until a Cluster Admin verifies your account.
+          </p>
+        )}
 
         {showHarvest && (
           <form onSubmit={handleRecordHarvest} style={{ marginTop: 16, maxWidth: 340 }}>

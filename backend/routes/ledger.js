@@ -1,8 +1,10 @@
 const express = require('express');
 const db = require('../db/db');
 const { verifyChain } = require('../services/ledger');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth, requireRole('admin'));
 
 // GET /api/ledger - the WHOLE chain across every batch, most recent first,
 // enriched with the human-readable batch code. This is what makes it feel

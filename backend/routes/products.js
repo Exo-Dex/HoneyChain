@@ -4,13 +4,15 @@ const QRCode = require('qrcode');
 const db = require('../db/db');
 const { appendEvent, verifyChain } = require('../services/ledger');
 const { assertActivateQr, StateTransitionError } = require('../services/batchStateMachine');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
-const router = express.Router();       // mounted at /api/batches -> POST /:batchId/activate-qr
-const publicRouter = express.Router(); // mounted at /api        -> GET /verify/:qrToken
+const router = express.Router();       // mounted at /api/batches -> POST /:batchId/activate-qr (auth required)
+const publicRouter = express.Router(); // mounted at /api        -> GET /verify/:qrToken (no auth - consumers)
 
 // POST /api/batches/:batchId/activate-qr
-// Packages the product and activates its QR identity. Writes QR_ACTIVATED event.
-router.post('/:batchId/activate-qr', async (req, res) => {
+// Packages the product and activates its QR identity. Writes QR_ACTIVATED
+// event. Restricted to 'lab' - packaging is a processing-floor action.
+router.post('/:batchId/activate-qr', requireAuth, requireRole('lab'), async (req, res) => {
   const batch = db.prepare('SELECT * FROM batches WHERE id = ?').get(req.params.batchId);
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
 
@@ -40,7 +42,7 @@ router.post('/:batchId/activate-qr', async (req, res) => {
   const event = appendEvent({
     batch_id: batch.id,
     event_type: 'QR_ACTIVATED',
-    actor: req.body.actor || 'demo-packaging-unit',
+    actor: req.user.email,
     payload: { qr_token: qrToken },
   });
 

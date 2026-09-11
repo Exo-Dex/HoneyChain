@@ -8,27 +8,30 @@ produced this build) and the research docs (`understanding_our_chosen_problem_st
 `related-works-and-sources.txt`, `deep-search_honeyChain.txt`), which explain *why*
 each design choice was made.
 
-> **One sentence:** A verified beekeeper monitors a hive with simulated IoT data,
-> gets an AI-assisted health/yield insight, records a harvest, which becomes a honey
-> batch anchored to a tamper-evident hash-chained ledger, moves through processing
-> and a simulated quality test, and is packaged with a QR code that a consumer scans
-> to see the full verified provenance journey — including a live integrity check.
+> **One sentence:** A three-role login system (Beekeeper, Lab, Cluster Admin) gates
+> a vertical slice of the honey supply chain — a verified beekeeper monitors a hive
+> with simulated IoT data, gets an AI-assisted health/yield insight, records a
+> harvest, which becomes a honey batch anchored to a tamper-evident hash-chained
+> ledger, moves through lab processing and a simulated quality test, and is packaged
+> with a QR code that any consumer (no login needed) scans to see the full verified
+> provenance journey — including a live integrity check.
 
 ---
 
 ## 1. What this MVP proves
 
-Three demo capabilities, matching PS 26021's core asks:
+Four demo capabilities, matching PS 26021's core asks:
 
 ```text
-1. TRACEABLE BATCH        →  Harvest → Batch → hash-chained ledger events
-2. SMART HIVE             →  Simulated sensors → AI health score + yield prediction
-3. CONSUMER VERIFICATION  →  QR → provenance journey → live integrity check
+1. ACCESS CONTROL         →  3 roles, server-enforced, admin-gated beekeeper verification
+2. TRACEABLE BATCH        →  Harvest → Batch → hash-chained ledger events
+3. SMART HIVE             →  Simulated sensors → AI health score + yield prediction
+4. CONSUMER VERIFICATION  →  QR → provenance journey → live integrity check
 ```
 
 Everything else from the research phase (Madhukranti/KVIC integration, FPO
-marketplace, real lab APIs, batch split/merge genealogy, multi-role auth, trained
-ML models, real IoT hardware) is **deliberately out of scope** — see Section 9.
+marketplace, real lab APIs, batch split/merge genealogy, trained ML models, real
+IoT hardware) is **deliberately out of scope** — see Section 10.
 
 ---
 
@@ -38,35 +41,39 @@ ML models, real IoT hardware) is **deliberately out of scope** — see Section 9
                          ┌───────────────────────────┐
                          │        FRONTEND            │
                          │   React + Vite (SPA)       │
+                         │   AuthContext + cookie      │
                          │                             │
-                         │  /beekeeper   → Dashboard   │
-                         │  /beekeeper/  → Hive Detail │
-                         │   hives/:id                 │
-                         │  /admin       → Batch        │
-                         │                 Pipeline     │
-                         │  /scan        → Consumer     │
-                         │                 Verify        │
-                         └──────────────┬──────────────┘
-                                        │  fetch('/api/...')
+                         │  /login, /register           │
+                         │  /beekeeper*    (role: beekeeper)│
+                         │  /admin         (role: lab)   │
+                         │  /cluster, /ledger,            │
+                         │  /admin/approvals (role: admin) │
+                         │  /scan          (public)         │
+                         └──────────────┬──────────────────┘
+                                        │  fetch('/api/...', credentials:'include')
                                         │  (Vite dev proxy → :4000)
                                         ▼
-                         ┌───────────────────────────┐
-                         │        BACKEND              │
-                         │   Node.js + Express          │
-                         │                              │
-                         │  routes/                     │
-                         │   ├─ beekeepers.js            │
-                         │   ├─ hives.js                 │
-                         │   ├─ harvests.js               │
-                         │   ├─ batches.js                │
-                         │   ├─ quality.js                 │
-                         │   └─ products.js (+ public verify)│
-                         │                                  │
-                         │  services/                        │
-                         │   ├─ ledger.js   (hash-chain)      │
-                         │   ├─ ai.js       (health/yield)      │
-                         │   └─ simulator.js (mock IoT)          │
-                         └──────────────┬──────────────────────┘
+                         ┌────────────────────────────────┐
+                         │        BACKEND                   │
+                         │   Node.js + Express                │
+                         │                                     │
+                         │  middleware/auth.js                  │
+                         │   └─ requireAuth, requireRole(...)     │
+                         │                                          │
+                         │  routes/                                  │
+                         │   ├─ auth.js, admin.js (login/approve)      │
+                         │   ├─ hives.js, harvests.js (owner-scoped)     │
+                         │   ├─ batches.js, quality.js (lab-only writes)  │
+                         │   ├─ alerts.js, ledger.js (admin-only)           │
+                         │   └─ products.js, certificate.js (+public verify)│
+                         │                                                   │
+                         │  services/                                        │
+                         │   ├─ auth.js     (scrypt + HMAC tokens)              │
+                         │   ├─ ledger.js   (hash-chain)                         │
+                         │   ├─ batchStateMachine.js (pipeline order)             │
+                         │   ├─ ai.js       (health/yield)                         │
+                         │   └─ simulator.js (mock IoT)                              │
+                         └──────────────┬───────────────────────────────────────────┘
                                         │
                                         ▼
                          ┌───────────────────────────┐
@@ -82,6 +89,8 @@ ML models, real IoT hardware) is **deliberately out of scope** — see Section 9
 |---|---|
 | SQLite via `node:sqlite` | Zero native dependencies (no node-gyp/Visual Studio pain, per our own Windows setup experience). Trivial to swap for Postgres later since all access goes through `db.prepare(...)`. |
 | Hash-chained ledger instead of a real blockchain | Research finding: blockchain's *value* here is tamper-evidence + auditability, not decentralization. A real hash-chain gives an honest, independently verifiable integrity guarantee without standing up a testnet for a hackathon demo. Interface is designed to be swapped for a Solidity contract later without touching any route. |
+| Custom crypto-only auth instead of Passport/bcrypt/jsonwebtoken | Same zero-native-dependency philosophy as `node:sqlite`. `scrypt` + HMAC via Node's built-in `crypto` module - ~100 lines, fully readable, nothing to fail to compile. See Section 4. |
+| httpOnly cookie instead of localStorage for the session token | Client-side JS (including any injected via an XSS bug elsewhere) cannot read an httpOnly cookie - meaningfully harder to exfiltrate a session than a `localStorage` token. |
 | Rule-based AI instead of a trained model | Research finding: the PS explicitly warns against over-claiming disease diagnosis. Transparent thresholds are more defensible in judging than a black-box model with no real training data behind it yet. |
 | Simulated IoT instead of real hardware first | De-risks the demo (hardware can fail 5 minutes before judging — this was flagged explicitly in `mvp.txt`). The data shape is real; only the source is mocked. |
 
@@ -90,7 +99,11 @@ ML models, real IoT hardware) is **deliberately out of scope** — see Section 9
 ## 3. Data model
 
 ```text
-Beekeeper
+User (login account: email, password_hash, role)
+   │
+   │ role='beekeeper' links to exactly one:
+   ▼
+Beekeeper (verified: 0|1)
    │
    ▼
  Apiary
@@ -116,7 +129,8 @@ Batch (batch_code, status)
 
 | Table | Purpose |
 |---|---|
-| `beekeepers` | Identity + verification flag (pre-verified for demo) |
+| `users` | Login accounts: email, `password_hash`, `role` (beekeeper/lab/admin), `beekeeper_id` (only set for role=beekeeper) |
+| `beekeepers` | Beekeeper *profile* (name, district, state) + `verified` flag - separate from `users` because a lab/admin login has no beekeeper profile at all |
 | `apiaries` | Location grouping of hives |
 | `hives` | Physical hive identity, species, status |
 | `sensor_readings` | Time-series temp/humidity/weight (simulated or real) |
@@ -126,6 +140,15 @@ Batch (batch_code, status)
 | `quality_tests` | Simulated FSSAI-style lab record (moisture/HMF/C4 sugar) |
 | `products` | QR token + activation timestamp, one per packaged batch |
 
+**Why `users` and `beekeepers` are separate tables, not one:** a login account
+and a beekeeper business-profile are different concepts that happen to coincide
+for the beekeeper role. A lab or admin user needs the former with none of the
+latter. This also means a beekeeper's profile data (name, district, verification
+status) can exist and be referenced by hives/harvests independent of whatever
+identity/session system sits in front of it - useful if this were ever
+integrated with a real Madhukranti/KVIC identity provider instead of our own
+login table.
+
 **Batch status lifecycle:**
 
 ```text
@@ -134,23 +157,114 @@ CREATED → RECEIVED → TESTED → PROCESSED → PACKAGED
               └──(fail)──→ QUARANTINED  (terminal — cannot advance)
 ```
 
+**Beekeeper verification lifecycle:**
+
+```text
+Registers (POST /api/auth/register)
+        │
+        ▼
+  verified = 0  ──can register hives, cannot record harvests──┐
+        │                                                      │
+        │ Cluster Admin approves                               │
+        │ (POST /api/admin/beekeepers/:id/verify)               │
+        ▼                                                      │
+  verified = 1  ──requireVerifiedBeekeeper now passes───────────┘
+```
+
 **Referential integrity:** `PRAGMA foreign_keys = ON` is set in `db.js`, and
 every child table has a real `FOREIGN KEY` constraint — `hives→apiaries`,
 `hives→beekeepers`, `harvests→beekeepers`, `batches→harvests`,
-`batch_events→batches`, `quality_tests→batches`, `products→batches`. The one
-exception is `harvests.hive_ids`, which is a JSON array (a harvest can span
-multiple hives) and therefore can't be a real FK column — `POST /api/harvests`
-checks each hive ID exists and belongs to the given beekeeper before inserting,
-since SQLite can't do that check for us here.
+`batch_events→batches`, `quality_tests→batches`, `products→batches`,
+`users→beekeepers`. The one exception is `harvests.hive_ids`, which is a JSON
+array (a harvest can span multiple hives) and therefore can't be a real FK
+column — `POST /api/harvests` checks each hive ID exists and belongs to the
+given beekeeper before inserting, since SQLite can't do that check for us here.
 
 **Indexes** beyond the automatic primary-key indexes exist on every foreign-key
 column (`hives.beekeeper_id`, `batch_events.batch_id`, `sensor_readings.hive_id`,
-etc.) — irrelevant at demo scale, but correct hygiene and necessary once this
-holds more than a handful of beekeepers.
+`users.email`, `users.beekeeper_id`, etc.) — irrelevant at demo scale, but
+correct hygiene and necessary once this holds more than a handful of beekeepers.
 
 ---
 
-## 4. The ledger — how "blockchain" actually works here
+## 4. Authentication & role-based access control
+
+Three roles, mapped directly onto the pages/actions that already existed:
+**beekeeper** (own hives/harvests), **lab** (batch pipeline, cross-beekeeper),
+**admin** (cluster-wide oversight + approvals). Consumers need no account at
+all - the public verify/certificate routes never import the auth middleware.
+
+### Session mechanism
+
+`services/auth.js` implements two primitives using only Node's built-in
+`crypto` module - no `bcrypt`, no `jsonwebtoken`, no native dependencies:
+
+- **Password hashing**: `scrypt` with a random 16-byte salt per user, stored as
+  a self-describing string (`scrypt:<N>:<salt>:<hash>`) so the algorithm or
+  cost parameter could change later without invalidating existing hashes.
+- **Session tokens**: a JWT-*shaped* token (`header.payload.signature`,
+  base64url, HMAC-SHA256) - same structural guarantees as a real JWT
+  (server-signed, tamper-evident, carries an expiry) implemented in ~60 lines
+  rather than pulled in as a dependency. `verifyToken` uses
+  `crypto.timingSafeEqual` for the signature comparison specifically to avoid
+  timing side-channel attacks on the check itself.
+
+The token is set as an **httpOnly cookie** (`routes/auth.js`, cookie name
+`honeychain_session`) - never exposed to client-side JavaScript, which is the
+actual point of using a cookie over `localStorage` (an XSS bug elsewhere in the
+app can't be used to steal the session token if it does that). `sameSite`/
+`secure` flags adapt based on `NODE_ENV` (see Section 13's deployment notes).
+
+### Middleware (`backend/middleware/auth.js`)
+
+- `requireAuth` - parses the cookie (a ~15-line manual parser; not worth a
+  dependency), verifies the token, loads the current user from `users`, and
+  attaches `req.user = { id, email, role, beekeeper_id }`. Every protected
+  route file calls this via `router.use(requireAuth)` at the top, so it's
+  obvious from reading any route file whether it's protected.
+- `requireRole(...roles)` - simple allow-list check against `req.user.role`.
+- `requireVerifiedBeekeeper` - the actual enforcement point behind the
+  "verified beekeeper" badge shown throughout the UI. Used only on
+  `POST /api/harvests` - a beekeeper can register hives and watch sensor data
+  pre-verification, but cannot enter anything into the traceability ledger
+  until a Cluster Admin approves them.
+
+### What's scoped by ownership, not just role
+
+Role alone isn't enough - a beekeeper role also has to be restricted to *their
+own* data:
+
+- `GET /api/hives`, `GET /api/hives/:id` - a beekeeper only ever sees hives
+  where `hive.beekeeper_id === req.user.beekeeper_id`; a mismatch is a 403,
+  not a filtered-empty-result (so the boundary is visible/testable, not silent).
+- `POST /api/hives`, `POST /api/harvests` - `beekeeper_id`/`apiary_id` are
+  **always** resolved server-side from `req.user`, never trusted from the
+  request body. Earlier in this project's history, the client passed
+  `beekeeper_id` directly in the request - trivially spoofable. That's gone now.
+- `GET /api/batches`, `GET /api/batches/:id` - beekeepers see only batches
+  whose harvest belongs to them; lab/admin see all batches (lab genuinely needs
+  cross-beekeeper visibility to do their job).
+
+### Route → role matrix
+
+| Route | Beekeeper | Lab | Admin | Public |
+|---|---|---|---|---|
+| `POST /api/auth/register`, `/login` | - | - | - | ✅ |
+| `GET /api/hives*`, `POST /api/hives*` | ✅ (own only) | ❌ | 👁 (read, all) | ❌ |
+| `POST /api/harvests` | ✅ (if verified) | ❌ | ❌ | ❌ |
+| `GET /api/batches*` | 👁 (own only) | ✅ | ✅ | ❌ |
+| `POST /api/batches/:id/advance`, `/quality-test`, `/activate-qr` | ❌ | ✅ | ❌ | ❌ |
+| `GET /api/alerts`, `GET /api/ledger` | ❌ | ❌ | ✅ | ❌ |
+| `GET/POST /api/admin/beekeepers*` | ❌ | ❌ | ✅ | ❌ |
+| `GET /api/verify/:qrToken*` | - | - | - | ✅ |
+
+This matrix is enforced in the actual route files, not just documented here -
+`test/api.test.js` exercises most of these cells directly (see Section 13).
+
+---
+
+## 5. The ledger — how "blockchain" actually works here
+
 
 Implemented in `backend/services/ledger.js`. This is a real, functioning
 hash-chain, not a decorative label:
@@ -198,7 +312,7 @@ demo needs.
 
 ---
 
-## 5. Batch state machine — server-side enforcement
+## 6. Batch state machine — server-side enforcement
 
 Implemented in `backend/services/batchStateMachine.js`. An early version of
 this MVP only gated pipeline buttons in the frontend — a direct API call
@@ -217,9 +331,9 @@ CREATED → RECEIVED → TESTED → PROCESSED → PACKAGED
 - `assertActivateQr(batch)` — used by `POST /batches/:batchId/activate-qr`
 
 All three are pure functions (`{ status } → void | throws`), so they're
-unit-tested directly with no database involved (see Section 12).
+unit-tested directly with no database involved (see Section 13).
 
-## 6. AI layer
+## 7. AI layer
 
 Implemented in `backend/services/ai.js`. Two functions, both clearly labeled as
 predictions/heuristics — never diagnoses:
@@ -249,52 +363,81 @@ predictions/heuristics — never diagnoses:
 
 ---
 
-## 7. API reference
+## 8. API reference
 
-All routes under `/api`. Full detail in `backend/routes/*.js`.
+All routes under `/api`. Full detail in `backend/routes/*.js`. Auth requirement
+noted per route; see Section 4 for the full role matrix.
 
-| Method & path | Purpose |
-|---|---|
-| `GET /health` | Liveness check |
-| `GET/POST /beekeepers` | List / register beekeepers |
-| `POST /beekeepers/:id/apiaries` | Register an apiary |
-| `GET/POST /hives` | List (with live health snapshot) / register a hive |
-| `GET /hives/:id` | Full detail: readings + AI health + yield prediction |
-| `POST /hives/:id/simulate` | Regenerate readings under a named profile (demo control) |
-| `POST /harvests` | Records harvest **and** creates the resulting batch; writes 2 ledger events |
-| `GET /batches` / `GET /batches/:id` | List / full detail incl. ledger events, tests, product |
-| `GET /batches/code/:code` | Lookup by human-readable batch code |
-| `POST /batches/:id/advance` | Manual pipeline step (`BATCH_RECEIVED`, `BATCH_PROCESSED`) |
-| `GET /batches/:id/verify` | Recomputes and reports **global** ledger integrity |
-| `POST /batches/:batchId/quality-test` | Simulated lab test against FSSAI-style thresholds; quarantines on fail |
-| `POST /batches/:batchId/activate-qr` | Packages the batch, generates QR image, writes `QR_ACTIVATED` event |
-| `GET /verify/:qrToken` | **Public** consumer endpoint — provenance + journey + live integrity check |
+| Method & path | Auth | Purpose |
+|---|---|---|
+| `GET /health` | none | Liveness check |
+| `POST /auth/register` | none | Beekeeper self-registration (creates user + beekeeper + apiary, unverified) |
+| `POST /auth/login`, `/auth/logout` | none | Session cookie issue/clear |
+| `GET /auth/me` | any | Restore session on frontend load |
+| `GET /admin/beekeepers?status=` | admin | List beekeepers by verification status |
+| `POST /admin/beekeepers/:id/verify` | admin | Approve a pending beekeeper |
+| `GET/POST /hives` | beekeeper (own)/admin (all) | List / register a hive - `beekeeper_id` always from session |
+| `GET /hives/:id` | beekeeper (own)/admin | Full detail: readings + AI health + yield prediction |
+| `POST /hives/:id/simulate` | beekeeper (own) | Regenerate readings under a named profile (demo control) |
+| `POST /harvests` | beekeeper (own, **verified only**) | Records harvest **and** creates the batch; writes 2 ledger events |
+| `GET /batches`, `/batches/:id` | beekeeper (own)/lab/admin | List / full detail incl. ledger events, tests, product |
+| `GET /batches/code/:code` | beekeeper (own)/lab/admin | Lookup by human-readable batch code |
+| `POST /batches/:id/advance` | **lab only** | Manual pipeline step (`BATCH_RECEIVED`, `BATCH_PROCESSED`) |
+| `GET /batches/:id/verify` | beekeeper (own)/lab/admin | Recomputes and reports **global** ledger integrity |
+| `POST /batches/:batchId/quality-test` | **lab only** | Simulated lab test against FSSAI-style thresholds; quarantines on fail |
+| `POST /batches/:batchId/activate-qr` | **lab only** | Packages the batch, generates QR image, writes `QR_ACTIVATED` event |
+| `GET /batches/:id/certificate` | beekeeper (own)/lab/admin | PDF certificate by internal batch ID |
+| `GET /alerts` | **admin only** | Cross-hive flagged-hive feed, all beekeepers |
+| `GET /ledger` | **admin only** | Whole-system event timeline + integrity check |
+| `GET /verify/:qrToken` | none (public) | Consumer endpoint — provenance + journey + live integrity check |
+| `GET /verify/:qrToken/certificate` | none (public) | PDF certificate by QR token |
 
 ---
 
-## 8. Frontend
+## 9. Frontend
 
-React + Vite SPA, three personas as separate routes:
+React + Vite SPA. `AuthContext` (`src/context/AuthContext.jsx`) restores the
+session on load via `GET /api/auth/me`, and every non-public route is wrapped in
+`<ProtectedRoute roles={[...]}>` (`src/components/ProtectedRoute.jsx`), which
+redirects to `/login` if unauthenticated or to the user's own role-home if
+they're logged in but hit a route their role doesn't cover.
 
 ```text
-/beekeeper                    → Apiary overview + hive list with live health pills
-/beekeeper/hives/:hiveId      → Sensor readings, AI insight, "Record Harvest" action,
-                                 live profile-switch buttons for demo purposes
-/admin                        → Batch pipeline: select a batch, walk it through
-                                 Received → Quality Test (Pass/Force-Fail) → Processed
-                                 → Package & Activate QR; shows the ledger journey
-                                 with truncated hashes
-/scan  and  /scan/:qrToken    → Consumer verification: paste or scan a batch code,
+/login, /register             → Public. Register creates a beekeeper account,
+                                 auto-logs-in, shows "pending verification" message.
+
+/beekeeper                    → role: beekeeper. Apiary overview + hive list,
+                                 with a pending-verification banner if unverified.
+/beekeeper/hives/:hiveId      → role: beekeeper. Sensor readings, AI insight,
+                                 "Record Harvest" (disabled until verified),
+                                 live profile-switch buttons for demo purposes.
+
+/admin                        → role: lab. Batch pipeline: select a batch, walk it
+                                 through Received → Quality Test (Pass/Force-Fail)
+                                 → Processed → Package & Activate QR; shows the
+                                 ledger journey with truncated hashes.
+
+/cluster                      → role: admin. Cross-hive alerts, all beekeepers.
+/ledger                       → role: admin. Whole-system event timeline.
+/admin/approvals              → role: admin. Approve pending beekeeper registrations.
+
+/scan, /scan/:qrToken         → Fully public, no login. Paste or scan a batch code,
                                  see origin, harvest detail, quality result, full
-                                 traceability journey, and the live integrity check
+                                 traceability journey, and the live integrity check.
 ```
 
+The nav bar (`TopBar.jsx`) only renders links the logged-in role actually has
+access to - a lab account never even sees a "Cluster Alerts" link to click.
+This is a UX nicety, not the security boundary; the actual enforcement is
+server-side (Section 4) and is what the tests in Section 13 exercise.
+
 Shared styling in `src/index.css` (warm amber/honey theme). API calls centralized
-in `src/api.js`.
+in `src/api.js`, which sends `credentials: 'include'` on every request so the
+httpOnly session cookie round-trips correctly through Vite's dev proxy.
 
 ---
 
-## 9. Explicitly out of scope for this MVP
+## 10. Explicitly out of scope for this MVP
 
 Carried over from `mvp.txt`, unchanged:
 
@@ -304,14 +447,19 @@ Carried over from `mvp.txt`, unchanged:
 | FPO / marketplace layer | ❌ |
 | Real laboratory API integration | ❌ (simulated record only) |
 | Madhukranti / KVIC Honey MIS integration | ❌ (architected to allow later) |
-| Multi-role authentication | ❌ (single shared demo login) |
 | Batch split / merge genealogy | ❌ (schema allows; not exposed in UI) |
 | Trained ML disease/yield models | ❌ (rule-based heuristics only) |
 | Real IoT hardware | ❌ (simulation mode; see roadmap below) |
+| In-app staff (lab/admin) account management | ❌ (seed script only - see Section 4) |
+| Email verification / password reset | ❌ (not needed for a demo deployment) |
+
+**Now in scope, previously listed here as deferred:** real login with three
+roles, server-side ownership/role enforcement, and a beekeeper-verification
+approval workflow. See Section 4.
 
 ---
 
-## 10. Extension points (designed-in, not yet built)
+## 11. Extension points (designed-in, not yet built)
 
 These were kept in mind while building so the MVP doesn't need a rewrite later:
 
@@ -328,87 +476,110 @@ These were kept in mind while building so the MVP doesn't need a rewrite later:
 - **Government integration**: `beekeepers.id` and `hives.id` are plain strings
   specifically so they can later be swapped for Madhukranti/KVIC-issued IDs
   without a schema change.
+- **Staff account management UI**: `POST /api/admin/beekeepers/:id/verify`
+  already establishes the pattern (admin-only route mutating another user's
+  access); an equivalent `POST /api/admin/users` for creating lab accounts
+  in-app is a small addition to `routes/admin.js`, not an architecture change.
+- **Vetted auth library**: `services/auth.js`'s `hashPassword`/`verifyPassword`/
+  `signToken`/`verifyToken` are the only functions anything else calls: swapping
+  the internals for `bcrypt` + `jsonwebtoken` (or a session-store-backed
+  approach) touches one file.
 
 ---
 
-## 11. Project file structure
+## 12. Project file structure
 
 ```text
 honey-chain-mvp/
 ├── README.md                 # setup + demo script
 ├── architecture.md           # this file
 ├── backend/
+│   ├── .env.example           # JWT_SECRET, PORT, NODE_ENV, FRONTEND_ORIGIN
 │   ├── package.json
 │   ├── server.js              # Express entrypoint; exports `app` for tests, listens when run directly
 │   ├── db/
-│   │   ├── schema.sql          # full DDL: 9 tables + indexes + append-only triggers
+│   │   ├── schema.sql          # full DDL: 10 tables (incl. `users`) + indexes + append-only triggers
 │   │   ├── db.js               # node:sqlite connection + transaction shim (path configurable via env)
-│   │   └── seed.js             # demo data: Ramesh Patil + 6 hives
+│   │   └── seed.js             # demo accounts for all 3 roles + Ramesh Patil's 6 hives
+│   ├── middleware/
+│   │   └── auth.js              # requireAuth, requireRole(...), requireVerifiedBeekeeper
 │   ├── services/
-│   │   ├── ledger.js              # hash-chained event ledger
-│   │   ├── batchStateMachine.js    # server-side transition rules (pure functions)
-│   │   ├── ai.js                    # health score + yield prediction
-│   │   ├── simulator.js              # mock IoT sensor generator
-│   │   ├── hiveEnrichment.js          # shared health/yield enrichment (hives.js + alerts.js)
-│   │   └── certificatePdf.js           # shared PDF rendering (admin + public verify routes)
+│   │   ├── auth.js                 # password hashing (scrypt) + session tokens (HMAC) - crypto only
+│   │   ├── ledger.js                 # hash-chained event ledger
+│   │   ├── batchStateMachine.js       # server-side transition rules (pure functions)
+│   │   ├── ai.js                       # health score + yield prediction
+│   │   ├── simulator.js                 # mock IoT sensor generator
+│   │   ├── hiveEnrichment.js             # shared health/yield enrichment (hives.js + alerts.js)
+│   │   └── certificatePdf.js              # shared PDF rendering (admin + public verify routes)
 │   ├── routes/
-│   │   ├── beekeepers.js
-│   │   ├── hives.js
-│   │   ├── harvests.js                # validates hive/beekeeper existence before writing
-│   │   ├── batches.js                  # advance uses batchStateMachine
-│   │   ├── quality.js                   # quality-test uses batchStateMachine
-│   │   ├── products.js                   # QR activation (state-checked) + public verify
-│   │   ├── certificate.js                 # PDF certificate, admin + public routes
-│   │   ├── alerts.js                       # cluster-wide flagged-hive feed
-│   │   └── ledger.js                        # global ledger explorer endpoint
+│   │   ├── auth.js                # register/login/logout/me
+│   │   ├── admin.js                # beekeeper listing + approval (admin only)
+│   │   ├── hives.js                 # ownership-scoped; beekeeper_id always from session
+│   │   ├── harvests.js               # validates hive/beekeeper existence; requireVerifiedBeekeeper
+│   │   ├── batches.js                 # advance uses batchStateMachine; lab only
+│   │   ├── quality.js                  # quality-test uses batchStateMachine; lab only
+│   │   ├── products.js                  # QR activation (lab only, state-checked) + public verify
+│   │   ├── certificate.js                # PDF certificate, ownership-checked + public routes
+│   │   ├── alerts.js                      # cluster-wide flagged-hive feed (admin only)
+│   │   └── ledger.js                       # global ledger explorer endpoint (admin only)
 │   └── test/
 │       ├── batchStateMachine.test.js         # pure unit tests, no DB
 │       ├── ledger.test.js                     # trigger + hash-chain tamper detection
-│       └── api.test.js                         # full HTTP integration tests
+│       └── api.test.js                         # full HTTP integration tests incl. auth/RBAC
 └── frontend/
     └── src/
-        ├── api.js                  # fetch wrapper for all backend calls
-        ├── App.jsx                  # router
+        ├── api.js                  # fetch wrapper, credentials:'include' on every call
+        ├── App.jsx                  # router incl. ProtectedRoute wrapping per role
         ├── index.css                 # honey/amber theme
-        ├── lib/currentBeekeeper.js     # localStorage-backed current-beekeeper selection
-        ├── components/TopBar.jsx
+        ├── context/AuthContext.jsx    # session restore, login/register/logout
+        ├── components/
+        │   ├── TopBar.jsx               # role-aware nav + logout
+        │   └── ProtectedRoute.jsx        # redirects based on auth/role state
         └── pages/
-            ├── BeekeeperDashboard.jsx     # + beekeeper switcher/registration
-            ├── HiveDetail.jsx
-            ├── AdminBatchPipeline.jsx      # + certificate download
-            ├── ConsumerScan.jsx             # + certificate download
-            ├── ClusterAlerts.jsx             # cross-hive alerts across all beekeepers
-            └── LedgerExplorer.jsx             # global ledger timeline
+            ├── LoginPage.jsx / RegisterPage.jsx
+            ├── BeekeeperDashboard.jsx      # own hives only; verification banner
+            ├── HiveDetail.jsx               # "Record Harvest" disabled if unverified
+            ├── AdminBatchPipeline.jsx        # role: lab
+            ├── ConsumerScan.jsx               # public, unchanged
+            ├── ClusterAlerts.jsx               # role: admin
+            ├── LedgerExplorer.jsx               # role: admin
+            └── AdminApprovals.jsx                # role: admin - approve pending beekeepers
 ```
 
 ---
 
-## 12. The demo script (hero workflow) and automated tests
+## 13. The demo script (hero workflow) and automated tests
 
-1. **Beekeeper** → open a healthy hive and a critical hive side by side; show the
-   AI health score and yield prediction reacting live via the "Simulate: Critical"
-   button.
-2. **Record Harvest** on a hive → batch is created, two events land on the ledger
-   immediately.
-3. **Processing / Lab** → walk the batch through Received → Quality Test (run the
-   **Force Fail** path once to show quarantine) → Processed → Package & Activate
-   QR. Point out the journey view growing a new hash-linked entry at each step.
-4. **Consumer Scan** → paste the batch code → full provenance + a green "all
-   events verified" integrity check.
-5. **The proof moment (now two-part)**: first attempt a direct `UPDATE` on
+0. **Register a new beekeeper** at `/register`, then **log in as Admin** and
+   approve them from the Approvals tab (or approve the pre-seeded
+   `sunita@honeychain.demo`, already pending) — this is the new opening beat,
+   establishing that the trust chain starts at registration, not at the ledger.
+1. **Log in as Beekeeper** → open a healthy hive and a critical hive side by
+   side; show the AI health score and yield prediction reacting live via the
+   "Simulate: Critical" button.
+2. **Record Harvest** on a hive → batch is created, two events land on the
+   ledger immediately. (Try this on the *unverified* account first to show it's
+   blocked, then on the verified one.)
+3. **Log in as Lab** → Processing/Lab tab → walk the batch through
+   Received → Quality Test (run the **Force Fail** path once to show
+   quarantine) → Processed → Package & Activate QR. Point out the journey view
+   growing a new hash-linked entry at each step.
+4. **Consumer Scan** (no login) → paste the batch code → full provenance + a
+   green "all events verified" integrity check.
+5. **The proof moment (two-part)**: first attempt a direct `UPDATE` on
    `batch_events` — it's rejected by the append-only DB trigger. Then simulate
    an attacker with elevated DB access by dropping that trigger first and
    tampering again — the consumer verify / Ledger tab now catches it via the
    hash-chain instead. Two independent layers, demonstrated live.
-6. **Try to break it via the API directly** (curl/Postman, not the UI): attempt
-   `activate-qr` on a freshly-created batch, or `quality-test` before
-   `advance(BATCH_RECEIVED)`. Both are rejected with a clear error — this is
-   what separates "the buttons happen to be in the right order" from an
-   actually-enforced state machine.
+6. **Try to break it via the API directly** (curl/Postman, not the UI), logged
+   in as a beekeeper: attempt `POST /api/batches/:id/advance` (lab-only - 403),
+   or view another beekeeper's `/api/hives/:id` (403), or omit the session
+   cookie entirely (401). This is what separates "the buttons happen to be in
+   the right order" from actually-enforced access control.
 
 ### Automated tests
 
-`cd backend && npm test` runs 21 tests via Node's built-in test runner (zero
+`cd backend && npm test` runs 28 tests via Node's built-in test runner (zero
 extra dependencies):
 
 - `test/batchStateMachine.test.js` — pure unit tests of every transition rule
@@ -416,9 +587,38 @@ extra dependencies):
 - `test/ledger.test.js` — append-only trigger enforcement, and hash-chain
   tamper detection once that protection is deliberately bypassed
 - `test/api.test.js` — full HTTP integration tests against the real Express
-  app on an ephemeral port: unknown hive/beekeeper rejection, out-of-order
-  rejection, quarantine blocking further progress, and the full happy path
-  end to end, finishing with a whole-ledger integrity check
+  app on an ephemeral port: login for all 3 roles, unauthenticated rejection,
+  cross-beekeeper ownership rejection, the unverified-beekeeper harvest block,
+  role-boundary rejection (beekeeper attempting a lab-only action), out-of-order
+  rejection, quarantine blocking further progress, the admin-approval flow
+  unblocking a previously-restricted account, and the full happy path end to
+  end, finishing with a whole-ledger integrity check.
 
 Tests run against an isolated SQLite file under `backend/test/` (via the
-`HONEYCHAIN_DB_PATH` env var), never the dev/demo database.
+`HONEYCHAIN_DB_PATH` env var), never the dev/demo database. Since Node's
+built-in `fetch` has no cookie jar (unlike a browser), `test/api.test.js`
+manually captures the `Set-Cookie` header from each login and replays it as a
+`Cookie` header on subsequent requests for that "session."
+
+## 14. Deployment notes
+
+Not deployed anywhere yet, but the codebase doesn't fight a real deployment:
+
+- **Secrets**: `JWT_SECRET` must be a real random value in any non-local
+  environment (`.env.example` shows how to generate one) - the app throws
+  clearly on boot if it's missing, rather than silently using an insecure default.
+- **Cookies cross-origin**: if the frontend is ever served from a different
+  origin than the API (rather than Vite's dev proxy hiding this), `NODE_ENV=production`
+  switches the session cookie to `sameSite: 'none'; secure: true`, which
+  requires HTTPS - `routes/auth.js`'s `cookieOptions()` already branches on this.
+- **CORS**: `FRONTEND_ORIGIN` in `.env` must exactly match wherever the
+  frontend is actually served from in production (scheme + host + port) - a
+  wildcard origin doesn't work with `credentials: true`.
+- **Single-process option**: for a simple deployment (e.g. a single Render/
+  Railway service), Express could serve the built frontend (`frontend/dist`)
+  as static files alongside the API, avoiding CORS/cookie cross-origin concerns
+  entirely - not wired up yet, but `server.js` is a normal Express app that
+  would accept `express.static(...)` without restructuring.
+- **Database**: `node:sqlite` is fine for a single-instance deployment; a
+  multi-instance/horizontally-scaled deployment would need Postgres, since
+  SQLite's file-based locking doesn't work across separate processes/machines.

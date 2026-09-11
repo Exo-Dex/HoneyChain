@@ -55,7 +55,7 @@ export default function AdminBatchPipeline() {
     setBusy(true);
     setError(null);
     try {
-      await api.advanceBatch(selectedId, eventType, 'demo-processing-unit');
+      await api.advanceBatch(selectedId, eventType);
       await loadDetail(selectedId);
       await loadBatches();
     } catch (e) {

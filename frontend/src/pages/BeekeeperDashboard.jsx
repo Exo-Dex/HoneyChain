@@ -1,33 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
-import { getCurrentBeekeeperId, setCurrentBeekeeperId } from '../lib/currentBeekeeper';
+import { useAuth } from '../context/AuthContext';
 
 export default function BeekeeperDashboard() {
-  const [beekeeperId, setBeekeeperId] = useState(getCurrentBeekeeperId());
-  const [beekeeper, setBeekeeper] = useState(null);
-  const [allBeekeepers, setAllBeekeepers] = useState([]);
+  const { user, refresh } = useAuth();
   const [hives, setHives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddHive, setShowAddHive] = useState(false);
   const [newHiveProfile, setNewHiveProfile] = useState('healthy');
   const [creating, setCreating] = useState(false);
-  const [showRegister, setShowRegister] = useState(false);
-  const [regForm, setRegForm] = useState({ name: '', district: '', state: 'Maharashtra', phone: '' });
-  const [registering, setRegistering] = useState(false);
 
   async function load() {
     setLoading(true);
     setError(null);
     try {
-      const [beekeepers, hivesData] = await Promise.all([
-        api.getBeekeepers(),
-        api.getHives(beekeeperId),
-      ]);
-      setAllBeekeepers(beekeepers);
-      setBeekeeper(beekeepers.find(b => b.id === beekeeperId) || null);
-      setHives(hivesData);
+      setHives(await api.getHives());
     } catch (e) {
       setError(e.message);
     } finally {
@@ -35,36 +24,13 @@ export default function BeekeeperDashboard() {
     }
   }
 
-  useEffect(() => { load(); }, [beekeeperId]);
-
-  function handleSwitch(e) {
-    const id = e.target.value;
-    setCurrentBeekeeperId(id);
-    setBeekeeperId(id);
-  }
+  useEffect(() => { load(); }, []);
 
   async function handleAddHive(e) {
     e.preventDefault();
     setCreating(true);
     try {
-      // Reuse this beekeeper's apiary, or create one on the fly if they don't have one yet
-      const apiaries = await fetch(`/api/beekeepers/${beekeeperId}/apiaries`).then(r => r.json());
-      let apiaryId = apiaries[0]?.id;
-      if (!apiaryId) {
-        const created = await fetch(`/api/beekeepers/${beekeeperId}/apiaries`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'Main Apiary' }),
-        }).then(r => r.json());
-        apiaryId = created.id;
-      }
-
-      await api.createHive({
-        beekeeper_id: beekeeperId,
-        apiary_id: apiaryId,
-        species: 'Apis cerana',
-        simulate_profile: newHiveProfile,
-      });
+      await api.createHive({ species: 'Apis cerana', simulate_profile: newHiveProfile });
       setShowAddHive(false);
       await load();
     } catch (e) {
@@ -74,28 +40,7 @@ export default function BeekeeperDashboard() {
     }
   }
 
-  async function handleRegister(e) {
-    e.preventDefault();
-    setRegistering(true);
-    setError(null);
-    try {
-      const newBeekeeper = await api.createBeekeeper(regForm);
-      await fetch(`/api/beekeepers/${newBeekeeper.id}/apiaries`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Main Apiary', location: `${regForm.district}, ${regForm.state}` }),
-      });
-      setCurrentBeekeeperId(newBeekeeper.id);
-      setBeekeeperId(newBeekeeper.id);
-      setShowRegister(false);
-      setRegForm({ name: '', district: '', state: 'Maharashtra', phone: '' });
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setRegistering(false);
-    }
-  }
-
+  const beekeeper = user?.beekeeper;
   const counts = hives.reduce((acc, h) => {
     acc[h.health_status] = (acc[h.health_status] || 0) + 1;
     return acc;
@@ -104,49 +49,19 @@ export default function BeekeeperDashboard() {
   return (
     <div>
       <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
-          <div>
-            <h2 style={{ margin: 0 }}>My Apiary — {beekeeper?.name || '...'}</h2>
-            <p className="muted" style={{ margin: '4px 0 0' }}>
-              {beekeeper ? `${beekeeper.district || '—'}, ${beekeeper.state || '—'} · ${beekeeper.verified ? 'Verified beekeeper' : 'Unverified'}` : ''}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select value={beekeeperId} onChange={handleSwitch} style={{ width: 'auto' }}>
-              {allBeekeepers.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-            <button className="btn-secondary btn" onClick={() => setShowRegister(s => !s)}>
-              {showRegister ? 'Cancel' : '+ New Beekeeper'}
-            </button>
-          </div>
-        </div>
+        <h2 style={{ margin: 0 }}>My Apiary — {beekeeper?.name}</h2>
+        <p className="muted" style={{ margin: '4px 0 0' }}>
+          {beekeeper?.district}, {beekeeper?.state} · {beekeeper?.verified ? 'Verified beekeeper' : 'Pending verification'}
+        </p>
 
-        {showRegister && (
-          <form onSubmit={handleRegister} style={{ marginTop: 16, maxWidth: 360, borderTop: '1px solid #f0e5cc', paddingTop: 16 }}>
-            <div className="field">
-              <label>Full name</label>
-              <input required value={regForm.name} onChange={e => setRegForm({ ...regForm, name: e.target.value })} />
-            </div>
-            <div className="grid grid-2">
-              <div className="field">
-                <label>District</label>
-                <input required value={regForm.district} onChange={e => setRegForm({ ...regForm, district: e.target.value })} />
-              </div>
-              <div className="field">
-                <label>State</label>
-                <input required value={regForm.state} onChange={e => setRegForm({ ...regForm, state: e.target.value })} />
-              </div>
-            </div>
-            <div className="field">
-              <label>Phone</label>
-              <input value={regForm.phone} onChange={e => setRegForm({ ...regForm, phone: e.target.value })} />
-            </div>
-            <button className="btn" type="submit" disabled={registering}>
-              {registering ? 'Registering...' : 'Register & Switch'}
+        {!beekeeper?.verified && (
+          <div className="notice-box" style={{ marginTop: 14 }}>
+            ⏳ Your account is pending Cluster Admin verification. You can register hives and watch
+            sensor data in the meantime, but you won't be able to record a harvest until you're approved.
+            {' '}<button className="btn-secondary btn" style={{ marginLeft: 6, padding: '4px 10px', fontSize: '0.8rem' }} onClick={refresh}>
+              Check again
             </button>
-          </form>
+          </div>
         )}
 
         <div className="grid grid-3" style={{ marginTop: 14 }}>
@@ -185,7 +100,7 @@ export default function BeekeeperDashboard() {
         {loading ? (
           <p className="muted">Loading hives...</p>
         ) : hives.length === 0 ? (
-          <p className="muted" style={{ marginTop: 16 }}>No hives yet for this beekeeper. Register one above.</p>
+          <p className="muted" style={{ marginTop: 16 }}>No hives yet. Register one above.</p>
         ) : (
           <div className="grid grid-3" style={{ marginTop: 16 }}>
             {hives.map(hive => (

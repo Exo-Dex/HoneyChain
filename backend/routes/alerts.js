@@ -1,8 +1,10 @@
 const express = require('express');
 const db = require('../db/db');
 const { enrichHive } = require('../services/hiveEnrichment');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth, requireRole('admin'));
 
 // GET /api/alerts - cluster-wide view across ALL beekeepers/hives.
 // Returns summary counts plus the list of hives currently flagged

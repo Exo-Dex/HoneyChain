@@ -3,8 +3,10 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../db/db');
 const { appendEvent } = require('../services/ledger');
 const { assertQualityTest, StateTransitionError } = require('../services/batchStateMachine');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
+router.use(requireAuth);
 
 // FSSAI-style thresholds used only to classify our SIMULATED demo numbers.
 // These are illustrative limits from the FSSAI honey standard, not a real lab integration.
@@ -15,9 +17,10 @@ const THRESHOLDS = {
 };
 
 // POST /api/batches/:batchId/quality-test
-// body: { moisture, hmf, c4_sugar, actor }
-// If any value omitted, generates a plausible simulated value.
-router.post('/:batchId/quality-test', (req, res) => {
+// body: { moisture, hmf, c4_sugar }
+// Restricted to the 'lab' role. If any value omitted, generates a plausible
+// simulated value. `actor` is always the authenticated user's email.
+router.post('/:batchId/quality-test', requireRole('lab'), (req, res) => {
   const batch = db.prepare('SELECT * FROM batches WHERE id = ?').get(req.params.batchId);
   if (!batch) return res.status(404).json({ error: 'Batch not found' });
 
@@ -33,7 +36,7 @@ router.post('/:batchId/quality-test', (req, res) => {
   const moisture = req.body.moisture ?? rand(16, 21);
   const hmf = req.body.hmf ?? rand(10, 90);
   const c4_sugar = req.body.c4_sugar ?? rand(1, 8);
-  const actor = req.body.actor || 'demo-lab';
+  const actor = req.user.email;
 
   const failReasons = [];
   if (moisture > THRESHOLDS.moisture_max) failReasons.push(`Moisture ${moisture}% exceeds ${THRESHOLDS.moisture_max}%`);
