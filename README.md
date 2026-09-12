@@ -9,7 +9,7 @@ can enter anything into the traceability chain, mirroring the real Madhukranti/K
 verification workflow this project's research is built on.
 
 This is the scope frozen in `mvp.txt` in the project research docs, since extended
-with real authentication/RBAC (see `architecture.md` §5a for the full design
+with real authentication/RBAC (see `architecture.md` §4 for the full design
 rationale) — deliberately a thin, complete slice rather than a wide, half-built
 ecosystem.
 
@@ -137,11 +137,27 @@ Open http://localhost:5173 — you'll land on the login page.
 | Cluster Admin | `admin@honeychain.demo` | `admin12345` |
 
 Lab and Admin accounts are provisioned only via `db/seed.js` — there's no in-app
-"create staff account" UI (a deliberate scope call; see `architecture.md` §5a).
+"create staff account" UI (a deliberate scope call; see `architecture.md` §4).
 Beekeepers self-register via the Register page and start unverified.
 
 You'll see an `ExperimentalWarning: SQLite is an experimental feature` line when the
 backend starts — that's expected and harmless.
+
+### Troubleshooting: "Invalid email or password" on a demo account
+
+The demo accounts only exist if `npm run seed` has actually run against your
+current database. If you started the server and registered your own account
+*before* running `npm run seed` (or skipped seeding entirely), the demo
+accounts (including lab/admin, which have no other way to be created) won't
+exist yet — your own account will work, but `ramesh@honeychain.demo` etc. will
+correctly fail to log in, because they're not there.
+
+Fix: just run `npm run seed` again (or for the first time). It's safe to run
+at any point, in any order, against any existing database — it only fills in
+whichever of the demo accounts/hives are missing and never duplicates or
+touches anything else, including your own account. You'll see a summary of
+what it created vs. what already existed, and the demo credentials are always
+printed at the end.
 
 ### Running the backend tests
 

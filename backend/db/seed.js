@@ -10,104 +10,131 @@ const DEMO_PASSWORD = {
   admin: 'admin12345',
 };
 
-function run() {
-  const existing = db.prepare('SELECT COUNT(*) as c FROM users').get();
-  if (existing.c > 0) {
-    console.log('Seed skipped: data already present. Delete backend/db/honeychain.db to reseed.');
-    return;
-  }
+/**
+ * IMPORTANT: this script is idempotent PER ACCOUNT, not "skip entirely if
+ * anything exists." An earlier version bailed out if the `users` table had
+ * ANY rows at all - which meant if someone registered their own account
+ * through the app before ever running `npm run seed`, every demo account
+ * (including lab/admin, which only exist via this script) silently never
+ * got created, and `npm run seed` gave no useful signal that anything was
+ * wrong. Safe to re-run this at any time, in any order, against any existing
+ * database - it only ever fills in what's missing.
+ */
 
-  const now = new Date().toISOString();
-
-  // ── Beekeeper #1: Ramesh Patil - pre-verified, so the main demo works
-  // immediately without needing an approval step first. ────────────────────
-  const beekeeperId = 'BK-RAMESH';
+function ensureBeekeeper({ id, name, district, state, phone, verified }) {
+  const exists = db.prepare('SELECT id FROM beekeepers WHERE id = ?').get(id);
+  if (exists) return false;
   db.prepare(`
     INSERT INTO beekeepers (id, name, district, state, phone, verified)
-    VALUES (?, 'Ramesh Patil', 'Pune', 'Maharashtra', '9800000000', 1)
-  `).run(beekeeperId);
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, name, district, state, phone, verified);
+  return true;
+}
 
-  const apiaryId = 'AP-MAIN';
+function ensureApiary({ id, beekeeperId, name, location, lat, lng }) {
+  const exists = db.prepare('SELECT id FROM apiaries WHERE id = ?').get(id);
+  if (exists) return false;
   db.prepare(`
     INSERT INTO apiaries (id, beekeeper_id, name, location, lat, lng)
-    VALUES (?, ?, 'Main Apiary', 'Pune, Maharashtra', 18.5204, 73.8567)
-  `).run(apiaryId, beekeeperId);
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, beekeeperId, name, location || null, lat || null, lng || null);
+  return true;
+}
 
+function ensureUser({ id, email, password, role, beekeeperId }) {
+  const exists = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+  if (exists) return false;
   db.prepare(`
     INSERT INTO users (id, email, password_hash, role, beekeeper_id, created_at)
-    VALUES (?, 'ramesh@honeychain.demo', ?, 'beekeeper', ?, ?)
-  `).run('U-RAMESH', hashPassword(DEMO_PASSWORD.beekeeper), beekeeperId, now);
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, email, hashPassword(password), role, beekeeperId || null, new Date().toISOString());
+  return true;
+}
 
-  const hiveProfiles = [
-    ['H-001', 'healthy'],
-    ['H-002', 'healthy'],
-    ['H-003', 'healthy'],
-    ['H-004', 'healthy'],
-    ['H-005', 'attention'],
-    ['H-006', 'critical'],
-  ];
+function ensureHiveWithReadings(hiveId, apiaryId, beekeeperId, profile) {
+  const exists = db.prepare('SELECT id FROM hives WHERE id = ?').get(hiveId);
+  if (exists) return false;
 
-  const insertHive = db.prepare(`
+  db.prepare(`
     INSERT INTO hives (id, apiary_id, beekeeper_id, species, status, installed_at)
     VALUES (?, ?, ?, 'Apis cerana', 'ACTIVE', ?)
-  `);
+  `).run(hiveId, apiaryId, beekeeperId, new Date().toISOString());
+
   const insertReading = db.prepare(`
     INSERT INTO sensor_readings (id, hive_id, timestamp, temperature, humidity, weight)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
-
-  const seedHives = db.transaction(() => {
-    for (const [hiveId, profile] of hiveProfiles) {
-      insertHive.run(hiveId, apiaryId, beekeeperId, now);
-      const readings = generateReadings(hiveId, 24, profile);
-      for (const r of readings) {
-        insertReading.run(uuidv4(), hiveId, r.timestamp, r.temperature, r.humidity, r.weight);
-      }
+  const readings = generateReadings(hiveId, 24, profile);
+  const insertAll = db.transaction(() => {
+    for (const r of readings) {
+      insertReading.run(uuidv4(), hiveId, r.timestamp, r.temperature, r.humidity, r.weight);
     }
   });
-  seedHives();
+  insertAll();
+  return true;
+}
+
+function run() {
+  const created = [];
+  const skipped = [];
+  const note = (label, wasCreated) => (wasCreated ? created : skipped).push(label);
+
+  // ── Beekeeper #1: Ramesh Patil - pre-verified, so the main demo works
+  // immediately without needing an approval step first. ────────────────────
+  note('beekeeper profile: Ramesh Patil', ensureBeekeeper({
+    id: 'BK-RAMESH', name: 'Ramesh Patil', district: 'Pune', state: 'Maharashtra', phone: '9800000000', verified: 1,
+  }));
+  note('apiary: AP-MAIN', ensureApiary({
+    id: 'AP-MAIN', beekeeperId: 'BK-RAMESH', name: 'Main Apiary', location: 'Pune, Maharashtra', lat: 18.5204, lng: 73.8567,
+  }));
+  note('login: ramesh@honeychain.demo', ensureUser({
+    id: 'U-RAMESH', email: 'ramesh@honeychain.demo', password: DEMO_PASSWORD.beekeeper, role: 'beekeeper', beekeeperId: 'BK-RAMESH',
+  }));
+
+  const hiveProfiles = [
+    ['H-001', 'healthy'], ['H-002', 'healthy'], ['H-003', 'healthy'],
+    ['H-004', 'healthy'], ['H-005', 'attention'], ['H-006', 'critical'],
+  ];
+  for (const [hiveId, profile] of hiveProfiles) {
+    note(`hive: ${hiveId}`, ensureHiveWithReadings(hiveId, 'AP-MAIN', 'BK-RAMESH', profile));
+  }
 
   // ── Beekeeper #2: Sunita Kale - deliberately left UNVERIFIED, so there's
   // something for the admin account to approve during a demo without having
   // to register a brand-new account live first. ────────────────────────────
-  const beekeeper2Id = 'BK-SUNITA';
-  db.prepare(`
-    INSERT INTO beekeepers (id, name, district, state, phone, verified)
-    VALUES (?, 'Sunita Kale', 'Nashik', 'Maharashtra', '9900011122', 0)
-  `).run(beekeeper2Id);
-
-  const apiary2Id = 'AP-NASHIK';
-  db.prepare(`
-    INSERT INTO apiaries (id, beekeeper_id, name, location)
-    VALUES (?, ?, 'Nashik Apiary', 'Nashik, Maharashtra')
-  `).run(apiary2Id, beekeeper2Id);
-
-  db.prepare(`
-    INSERT INTO users (id, email, password_hash, role, beekeeper_id, created_at)
-    VALUES (?, 'sunita@honeychain.demo', ?, 'beekeeper', ?, ?)
-  `).run('U-SUNITA', hashPassword(DEMO_PASSWORD.beekeeper), beekeeper2Id, now);
+  note('beekeeper profile: Sunita Kale', ensureBeekeeper({
+    id: 'BK-SUNITA', name: 'Sunita Kale', district: 'Nashik', state: 'Maharashtra', phone: '9900011122', verified: 0,
+  }));
+  note('apiary: AP-NASHIK', ensureApiary({
+    id: 'AP-NASHIK', beekeeperId: 'BK-SUNITA', name: 'Nashik Apiary', location: 'Nashik, Maharashtra',
+  }));
+  note('login: sunita@honeychain.demo', ensureUser({
+    id: 'U-SUNITA', email: 'sunita@honeychain.demo', password: DEMO_PASSWORD.beekeeper, role: 'beekeeper', beekeeperId: 'BK-SUNITA',
+  }));
 
   // ── Lab and Admin accounts - provisioned here, not via any in-app UI
   // (Decision: manual/seed-script is fine for staff accounts). ─────────────
-  db.prepare(`
-    INSERT INTO users (id, email, password_hash, role, beekeeper_id, created_at)
-    VALUES ('U-LAB', 'lab@honeychain.demo', ?, 'lab', NULL, ?)
-  `).run(hashPassword(DEMO_PASSWORD.lab), now);
+  note('login: lab@honeychain.demo', ensureUser({
+    id: 'U-LAB', email: 'lab@honeychain.demo', password: DEMO_PASSWORD.lab, role: 'lab',
+  }));
+  note('login: admin@honeychain.demo', ensureUser({
+    id: 'U-ADMIN', email: 'admin@honeychain.demo', password: DEMO_PASSWORD.admin, role: 'admin',
+  }));
 
-  db.prepare(`
-    INSERT INTO users (id, email, password_hash, role, beekeeper_id, created_at)
-    VALUES ('U-ADMIN', 'admin@honeychain.demo', ?, 'admin', NULL, ?)
-  `).run(hashPassword(DEMO_PASSWORD.admin), now);
+  console.log(`Seed run complete. Created ${created.length}, already present ${skipped.length}.`);
+  if (created.length > 0) {
+    console.log('  Newly created: ' + created.join(', '));
+  }
 
-  console.log('Seed complete.\n');
-  console.log('Demo login credentials:');
+  // Always print credentials, regardless of what was newly created vs already
+  // there - this is the one thing that must never silently disappear.
+  console.log('\nDemo login credentials:');
   console.log('------------------------------------------------------------');
   console.log('  Beekeeper (verified):    ramesh@honeychain.demo / beekeeper123');
   console.log('  Beekeeper (unverified):  sunita@honeychain.demo / beekeeper123');
   console.log('  Lab / Processing:        lab@honeychain.demo    / lab123456');
   console.log('  Cluster Admin:           admin@honeychain.demo  / admin12345');
   console.log('------------------------------------------------------------');
-  console.log(`  Ramesh's hives: ${hiveProfiles.map(h => h[0]).join(', ')}`);
 }
 
 run();
