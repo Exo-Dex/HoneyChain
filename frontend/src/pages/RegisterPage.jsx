@@ -21,7 +21,13 @@ export default function RegisterPage() {
     try {
       const { message } = await register(form);
       setSuccessMessage(message);
-      setTimeout(() => navigate('/beekeeper', { replace: true }), 2500);
+      // Deliberately no auto-redirect here. An earlier version navigated away
+      // after a couple of seconds automatically, which read as "it just
+      // approved itself" even though nothing was verified - the account was
+      // (correctly) still pending, but the fast, unprompted transition to the
+      // normal dashboard made that easy to miss. Now the person has to
+      // consciously click through, by which point they've actually seen the
+      // pending-verification message.
     } catch (err) {
       setError(err.message);
     } finally {
@@ -35,7 +41,19 @@ export default function RegisterPage() {
         <h2 style={{ textAlign: 'center' }}>🐝 Register as a Beekeeper</h2>
 
         {error && <div className="error-box">{error}</div>}
-        {successMessage && <div className="notice-box">{successMessage} Redirecting...</div>}
+
+        {successMessage && (
+          <div>
+            <div className="notice-box">⏳ {successMessage}</div>
+            <button
+              className="btn"
+              style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}
+              onClick={() => navigate('/beekeeper', { replace: true })}
+            >
+              Continue to My Apiary
+            </button>
+          </div>
+        )}
 
         {!successMessage && (
           <form onSubmit={handleSubmit}>

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS beekeepers (
   name TEXT NOT NULL,
   district TEXT,
   state TEXT,
-  phone TEXT,
+  phone TEXT UNIQUE, -- SQLite allows multiple NULLs under UNIQUE, so an omitted phone is fine
   verified INTEGER DEFAULT 0 -- 0 until a Cluster Admin approves; see users.role='admin'
 );
 

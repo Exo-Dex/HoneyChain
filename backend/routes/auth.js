@@ -48,6 +48,13 @@ router.post('/register', (req, res) => {
     return res.status(409).json({ error: 'An account with that email already exists.' });
   }
 
+  if (phone) {
+    const phoneTaken = db.prepare('SELECT id FROM beekeepers WHERE phone = ?').get(phone);
+    if (phoneTaken) {
+      return res.status(409).json({ error: 'An account with that phone number already exists.' });
+    }
+  }
+
   const beekeeperId = 'BK-' + uuidv4().slice(0, 6).toUpperCase();
   const apiaryId = 'AP-' + uuidv4().slice(0, 6).toUpperCase();
   const userId = 'U-' + uuidv4().slice(0, 8).toUpperCase();

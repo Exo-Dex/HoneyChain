@@ -70,13 +70,22 @@ export default function HiveDetail() {
   if (error && !hive) return <div className="error-box">{error}</div>;
   if (!hive) return null;
 
+  const isBeekeeper = user?.role === 'beekeeper';
   const { health, yield_prediction, readings } = hive;
   const recent = readings.slice(-6);
   const latest = readings[readings.length - 1];
 
   return (
     <div>
-      <Link to="/beekeeper" className="muted" style={{ textDecoration: 'none' }}>&larr; Back to apiary</Link>
+      <Link to={isBeekeeper ? '/beekeeper' : '/cluster'} className="muted" style={{ textDecoration: 'none' }}>
+        &larr; {isBeekeeper ? 'Back to apiary' : 'Back to Cluster Alerts'}
+      </Link>
+
+      {!isBeekeeper && (
+        <div className="notice-box" style={{ marginTop: 12 }}>
+          👁 Read-only oversight view. Harvest recording and hive management are only available to the owning beekeeper.
+        </div>
+      )}
 
       {error && <div className="error-box" style={{ marginTop: 12 }}>{error}</div>}
 
@@ -160,40 +169,44 @@ export default function HiveDetail() {
           </table>
         </div>
 
-        <div className="btn-row">
-          <button className="btn" disabled={!user?.beekeeper?.verified} onClick={() => setShowHarvest(s => !s)} title={!user?.beekeeper?.verified ? 'Your account is pending admin verification' : ''}>
-            {showHarvest ? 'Cancel' : '🍯 Record Harvest'}
-          </button>
-          <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('healthy')}>Simulate: Healthy</button>
-          <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('attention')}>Simulate: Attention</button>
-          <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('critical')}>Simulate: Critical</button>
-        </div>
-
-        {!user?.beekeeper?.verified && (
-          <p className="muted" style={{ fontSize: '0.8rem', marginTop: 6 }}>
-            ⏳ Recording harvests is disabled until a Cluster Admin verifies your account.
-          </p>
-        )}
-
-        {showHarvest && (
-          <form onSubmit={handleRecordHarvest} style={{ marginTop: 16, maxWidth: 340 }}>
-            <div className="field">
-              <label>Quantity harvested (kg)</label>
-              <input type="number" step="0.1" value={quantity} onChange={e => setQuantity(e.target.value)} required />
+        {isBeekeeper && (
+          <>
+            <div className="btn-row">
+              <button className="btn" disabled={!user?.beekeeper?.verified} onClick={() => setShowHarvest(s => !s)} title={!user?.beekeeper?.verified ? 'Your account is pending admin verification' : ''}>
+                {showHarvest ? 'Cancel' : '🍯 Record Harvest'}
+              </button>
+              <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('healthy')}>Simulate: Healthy</button>
+              <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('attention')}>Simulate: Attention</button>
+              <button className="btn-secondary btn" disabled={simulating} onClick={() => handleReSimulate('critical')}>Simulate: Critical</button>
             </div>
-            <div className="field">
-              <label>Floral source</label>
-              <select value={floralSource} onChange={e => setFloralSource(e.target.value)}>
-                <option>Mustard</option>
-                <option>Litchi</option>
-                <option>Multi-floral</option>
-                <option>Eucalyptus</option>
-              </select>
-            </div>
-            <button className="btn" type="submit" disabled={submitting}>
-              {submitting ? 'Recording...' : 'Create Batch on Ledger'}
-            </button>
-          </form>
+
+            {!user?.beekeeper?.verified && (
+              <p className="muted" style={{ fontSize: '0.8rem', marginTop: 6 }}>
+                ⏳ Recording harvests is disabled until a Cluster Admin verifies your account.
+              </p>
+            )}
+
+            {showHarvest && (
+              <form onSubmit={handleRecordHarvest} style={{ marginTop: 16, maxWidth: 340 }}>
+                <div className="field">
+                  <label>Quantity harvested (kg)</label>
+                  <input type="number" step="0.1" value={quantity} onChange={e => setQuantity(e.target.value)} required />
+                </div>
+                <div className="field">
+                  <label>Floral source</label>
+                  <select value={floralSource} onChange={e => setFloralSource(e.target.value)}>
+                    <option>Mustard</option>
+                    <option>Litchi</option>
+                    <option>Multi-floral</option>
+                    <option>Eucalyptus</option>
+                  </select>
+                </div>
+                <button className="btn" type="submit" disabled={submitting}>
+                  {submitting ? 'Recording...' : 'Create Batch on Ledger'}
+                </button>
+              </form>
+            )}
+          </>
         )}
       </div>
     </div>

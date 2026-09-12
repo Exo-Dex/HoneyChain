@@ -33,9 +33,10 @@ export default function App() {
             <Route path="/register" element={<RegisterPage />} />
 
             <Route path="/beekeeper" element={<ProtectedRoute roles={['beekeeper']}><BeekeeperDashboard /></ProtectedRoute>} />
-            <Route path="/beekeeper/hives/:hiveId" element={<ProtectedRoute roles={['beekeeper']}><HiveDetail /></ProtectedRoute>} />
+            <Route path="/beekeeper/hives/:hiveId" element={<ProtectedRoute roles={['beekeeper', 'admin']}><HiveDetail /></ProtectedRoute>} />
 
-            <Route path="/admin" element={<ProtectedRoute roles={['lab']}><AdminBatchPipeline /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute roles={['lab', 'admin']}><AdminBatchPipeline /></ProtectedRoute>} />
+            <Route path="/admin/batches/:batchId" element={<ProtectedRoute roles={['lab', 'admin']}><AdminBatchPipeline /></ProtectedRoute>} />
 
             <Route path="/cluster" element={<ProtectedRoute roles={['admin']}><ClusterAlerts /></ProtectedRoute>} />
             <Route path="/ledger" element={<ProtectedRoute roles={['admin']}><LedgerExplorer /></ProtectedRoute>} />

@@ -80,7 +80,7 @@ export default function LedgerExplorer() {
                 <td>{EVENT_ICONS[ev.event_type] || '•'} {ev.event_type.replaceAll('_', ' ')}</td>
                 <td>
                   {ev.batch_code ? (
-                    <Link to="/admin" className="muted">{ev.batch_code}</Link>
+                    <Link to={`/admin/batches/${ev.batch_id}`} className="muted">{ev.batch_code}</Link>
                   ) : <span className="muted">—</span>}
                 </td>
                 <td className="muted">{new Date(ev.timestamp).toLocaleString()}</td>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const PIPELINE = [
   { key: 'CREATED', label: 'Harvested', event: null },
@@ -16,8 +18,11 @@ function stepIndex(status) {
 }
 
 export default function AdminBatchPipeline() {
+  const { batchId: deepLinkBatchId } = useParams();
+  const { user } = useAuth();
+  const isLab = user?.role === 'lab';
   const [batches, setBatches] = useState([]);
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(deepLinkBatchId || null);
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -29,6 +34,7 @@ export default function AdminBatchPipeline() {
     try {
       const data = await api.getBatches();
       setBatches(data);
+      // A deep link from the Ledger takes priority; otherwise default to the first batch.
       if (!selectedId && data.length > 0) setSelectedId(data[0].id);
     } catch (e) {
       setError(e.message);
@@ -134,6 +140,7 @@ export default function AdminBatchPipeline() {
               detail={detail}
               busy={busy}
               qrImage={qrImage}
+              isLab={isLab}
               onAdvance={handleAdvance}
               onQualityTest={handleQualityTest}
               onActivateQr={handleActivateQr}
@@ -147,7 +154,7 @@ export default function AdminBatchPipeline() {
   );
 }
 
-function BatchDetailPanel({ detail, busy, qrImage, onAdvance, onQualityTest, onActivateQr }) {
+function BatchDetailPanel({ detail, busy, qrImage, isLab, onAdvance, onQualityTest, onActivateQr }) {
   const idx = stepIndex(detail.status);
   const quarantined = detail.status === 'QUARANTINED';
 
@@ -163,6 +170,12 @@ function BatchDetailPanel({ detail, busy, qrImage, onAdvance, onQualityTest, onA
         </p>
       )}
 
+      {!isLab && (
+        <div className="notice-box">
+          👁 Read-only oversight view. Pipeline actions are only available to Lab/Processing accounts.
+        </div>
+      )}
+
       {quarantined && (
         <div className="error-box">
           This batch failed its quality test and is <strong>quarantined</strong>. It cannot proceed to packaging.
@@ -170,21 +183,25 @@ function BatchDetailPanel({ detail, busy, qrImage, onAdvance, onQualityTest, onA
       )}
 
       <div className="btn-row">
-        <button className="btn" disabled={busy || detail.status !== 'CREATED'} onClick={() => onAdvance('BATCH_RECEIVED')}>
-          Mark Received
-        </button>
-        <button className="btn" disabled={busy || detail.status !== 'RECEIVED'} onClick={() => onQualityTest(false)}>
-          Run Quality Test (Pass)
-        </button>
-        <button className="btn-secondary btn" disabled={busy || detail.status !== 'RECEIVED'} onClick={() => onQualityTest(true)}>
-          Run Quality Test (Force Fail)
-        </button>
-        <button className="btn" disabled={busy || detail.status !== 'TESTED'} onClick={() => onAdvance('BATCH_PROCESSED')}>
-          Mark Processed
-        </button>
-        <button className="btn" disabled={busy || detail.status !== 'PROCESSED'} onClick={onActivateQr}>
-          Package &amp; Activate QR
-        </button>
+        {isLab && (
+          <>
+            <button className="btn" disabled={busy || detail.status !== 'CREATED'} onClick={() => onAdvance('BATCH_RECEIVED')}>
+              Mark Received
+            </button>
+            <button className="btn" disabled={busy || detail.status !== 'RECEIVED'} onClick={() => onQualityTest(false)}>
+              Run Quality Test (Pass)
+            </button>
+            <button className="btn-secondary btn" disabled={busy || detail.status !== 'RECEIVED'} onClick={() => onQualityTest(true)}>
+              Run Quality Test (Force Fail)
+            </button>
+            <button className="btn" disabled={busy || detail.status !== 'TESTED'} onClick={() => onAdvance('BATCH_PROCESSED')}>
+              Mark Processed
+            </button>
+            <button className="btn" disabled={busy || detail.status !== 'PROCESSED'} onClick={onActivateQr}>
+              Package &amp; Activate QR
+            </button>
+          </>
+        )}
         <a className="btn-secondary btn" href={`/api/batches/${detail.id}/certificate`} target="_blank" rel="noreferrer">
           📄 Download Certificate
         </a>
