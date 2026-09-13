@@ -3,9 +3,9 @@
 **Team Odysseus · SIH 2026 · PS 26021**
 
 This document freezes what we've actually built, as a reference for the team and
-for demo prep. It should be read alongside `mvp.txt` (the scope decision that
-produced this build) and the research docs (`understanding_our_chosen_problem_statement.`,
-`related-works-and-sources.txt`, `deep-search_honeyChain.txt`), which explain *why*
+for demo prep. It should be read alongside `docs/mvp.txt` (the scope decision that
+produced this build) and the research docs (`docs/understanding_our_chosen_problem_statement.md`,
+`docs/related-works-and-sources.txt`, `docs/deep-search_honeyChain.txt`), which explain *why*
 each design choice was made.
 
 > **One sentence:** A three-role login system (Beekeeper, Lab, Cluster Admin) gates
@@ -92,7 +92,7 @@ IoT hardware) is **deliberately out of scope** — see Section 10.
 | Custom crypto-only auth instead of Passport/bcrypt/jsonwebtoken | Same zero-native-dependency philosophy as `node:sqlite`. `scrypt` + HMAC via Node's built-in `crypto` module - ~100 lines, fully readable, nothing to fail to compile. See Section 4. |
 | httpOnly cookie instead of localStorage for the session token | Client-side JS (including any injected via an XSS bug elsewhere) cannot read an httpOnly cookie - meaningfully harder to exfiltrate a session than a `localStorage` token. |
 | Rule-based AI instead of a trained model | Research finding: the PS explicitly warns against over-claiming disease diagnosis. Transparent thresholds are more defensible in judging than a black-box model with no real training data behind it yet. |
-| Simulated IoT instead of real hardware first | De-risks the demo (hardware can fail 5 minutes before judging — this was flagged explicitly in `mvp.txt`). The data shape is real; only the source is mocked. |
+| Simulated IoT instead of real hardware first | De-risks the demo (hardware can fail 5 minutes before judging — this was flagged explicitly in `docs/mvp.txt`). The data shape is real; only the source is mocked. |
 
 ---
 
@@ -291,6 +291,36 @@ event N's hash = SHA256( event(N-1).hash + canonical(event N's fields) )
   that exact `seq` number as broken, while everything before and after
   remains valid.
 
+**Concurrency: the read-then-write in `appendEvent` is atomic against
+concurrent writers, not just against tampering.** Computing the next `seq`
+and `prev_hash` requires reading the last event before writing the new one -
+without protection, two concurrent appends could both read the same "last
+event" and compute the same seq/prev_hash, corrupting the chain's ordering.
+Three layers guard against this, from cheapest to most fundamental:
+
+1. `batch_events.seq` has a `UNIQUE` constraint (`schema.sql`) - a duplicate
+   seq fails loudly with a constraint violation instead of silently landing.
+2. `appendEvent`'s read and write are wrapped in a single `BEGIN IMMEDIATE`
+   transaction (`db.transaction(fn, { immediate: true })` in `db.js`), which
+   takes SQLite's write lock *before* the read rather than at the first write
+   statement - a second writer is blocked until this transaction commits,
+   rather than racing it.
+3. `PRAGMA busy_timeout = 5000` (`db.js`) makes a blocked writer wait up to
+   5s for the lock rather than failing immediately with `SQLITE_BUSY`.
+
+This matters more than it might seem for a single-server demo: within one
+Node process, JS's run-to-completion model plus a synchronous SQLite driver
+already happens to serialize this (there's no `await` between the read and
+write), but that's an implicit property that a future `await` could silently
+break, and it doesn't hold at all across multiple processes (Node cluster,
+PM2 cluster mode, multiple containers - all standard ways to scale this app).
+`test/ledger-concurrency.test.js` proves the fix with genuine OS-level
+concurrency: it spawns several real child processes that all race to append
+to the same batch simultaneously, then asserts the resulting `seq` sequence
+has no gaps or duplicates and the whole chain still verifies. A same-process
+`Promise.all()` test would not actually exercise this - see that file's
+comments for why.
+
 **Event vocabulary currently implemented:**
 
 ```text
@@ -299,7 +329,7 @@ HARVEST_RECORDED → BATCH_CREATED → BATCH_RECEIVED → BATCH_TESTED (or BATCH
 ```
 
 This is a subset of the fuller event vocabulary proposed in
-`deep-search_honeyChain.txt` (Section 29) — deliberately trimmed to what the MVP
+`docs/deep-search_honeyChain.txt` (Section 29) — deliberately trimmed to what the MVP
 demo needs.
 
 **On-chain vs off-chain**, per the research recommendation:
@@ -439,7 +469,7 @@ httpOnly session cookie round-trips correctly through Vite's dev proxy.
 
 ## 10. Explicitly out of scope for this MVP
 
-Carried over from `mvp.txt`, unchanged:
+Carried over from `docs/mvp.txt`, unchanged:
 
 | Feature | Status |
 |---|---|
@@ -471,7 +501,7 @@ These were kept in mind while building so the MVP doesn't need a rewrite later:
   `verifyChain`) are the entire interface every route depends on. Swapping the
   internals for a Solidity contract call (e.g. on Polygon) means editing one file.
 - **Batch genealogy**: `batches` table and event vocabulary already anticipate
-  split/merge (see `deep-search_honeyChain.txt` §15); just needs UI + a couple of
+  split/merge (see `docs/deep-search_honeyChain.txt` §15); just needs UI + a couple of
   new event types (`BATCH_SPLIT`, `BATCH_MERGED`).
 - **Government integration**: `beekeepers.id` and `hives.id` are plain strings
   specifically so they can later be swapped for Madhukranti/KVIC-issued IDs
@@ -579,13 +609,18 @@ honey-chain-mvp/
 
 ### Automated tests
 
-`cd backend && npm test` runs 28 tests via Node's built-in test runner (zero
+`cd backend && npm test` runs 29 tests via Node's built-in test runner (zero
 extra dependencies):
 
 - `test/batchStateMachine.test.js` — pure unit tests of every transition rule
   and rejection case in `services/batchStateMachine.js`
 - `test/ledger.test.js` — append-only trigger enforcement, and hash-chain
   tamper detection once that protection is deliberately bypassed
+- `test/ledger-concurrency.test.js` — spawns several real child *processes*
+  (not same-process async code, which wouldn't actually race) that all
+  append to the same batch simultaneously, then asserts the resulting `seq`
+  values are gap-free and duplicate-free and the chain still verifies. See
+  Section 5 for why this needed a genuine multi-process test to be meaningful.
 - `test/api.test.js` — full HTTP integration tests against the real Express
   app on an ephemeral port: login for all 3 roles, unauthenticated rejection,
   cross-beekeeper ownership rejection, the unverified-beekeeper harvest block,

@@ -98,7 +98,9 @@ CREATE TABLE IF NOT EXISTS batches (
 -- Tampering with any row breaks every hash after it - independently verifiable.
 CREATE TABLE IF NOT EXISTS batch_events (
   id TEXT PRIMARY KEY,
-  seq INTEGER NOT NULL,           -- global sequence number (chain order)
+  seq INTEGER NOT NULL UNIQUE,     -- global sequence number (chain order) - UNIQUE so a
+                                    -- race that computes a duplicate seq fails loudly
+                                    -- instead of silently corrupting the chain order
   batch_id TEXT NOT NULL,
   event_type TEXT NOT NULL,       -- HARVEST_RECORDED, BATCH_CREATED, BATCH_RECEIVED, BATCH_TESTED, BATCH_PROCESSED, BATCH_PACKAGED, QR_ACTIVATED
   actor TEXT,

@@ -8,10 +8,15 @@ verification. New beekeeper registrations require Cluster Admin approval before 
 can enter anything into the traceability chain, mirroring the real Madhukranti/KVIC
 verification workflow this project's research is built on.
 
-This is the scope frozen in `mvp.txt` in the project research docs, since extended
+This is the scope frozen in `docs/mvp.txt` in the project research docs, since extended
 with real authentication/RBAC (see `architecture.md` §4 for the full design
 rationale) — deliberately a thin, complete slice rather than a wide, half-built
 ecosystem.
+
+**Team:** see [`TEAM.md`](TEAM.md). **Research base:** see [`docs/`](docs/) —
+these four documents (problem-statement analysis, prior-art survey, workflow/
+data-model research, and the MVP scope decision) are what `mvp.txt` and
+`architecture.md` are built on and reference throughout.
 
 ## Roles
 
@@ -37,7 +42,7 @@ frontend (React + Vite)  --/api-->  backend (Node/Express)  -->  SQLite (node:sq
 
 ### Why a hash-chain instead of a real blockchain for the MVP?
 
-Per the team's own research (`related-works-and-sources.txt`, `deep-search_honeyChain.txt`):
+Per the team's own research (`docs/related-works-and-sources.txt`, `docs/deep-search_honeyChain.txt`):
 blockchain's value here is **tamper-evidence + auditable event history**, not
 decentralization for its own sake. `services/ledger.js` implements a genuine
 append-only, hash-chained ledger — every event's hash is `SHA256(prev_hash + event
@@ -166,12 +171,16 @@ cd backend
 npm test
 ```
 
-Runs 28 tests (`node --test`, no extra dependencies): the batch state machine's
-transition rules, append-only ledger + tamper-detection, and full HTTP integration
-tests against the real Express app — including login, role boundaries, ownership
-boundaries (a beekeeper can't see another's hives), and the verification-gate
-(an unverified beekeeper is blocked from harvesting until admin-approved). Tests use
-an isolated SQLite file under `backend/test/`, never the dev/demo database.
+Runs 29 tests (`node --test`, no extra dependencies): the batch state machine's
+transition rules, append-only ledger + tamper-detection, a genuine multi-process
+concurrency test (spawns real OS processes racing to append to the same batch,
+proving no duplicate/missing sequence numbers under real concurrent writers —
+not just same-process code that wouldn't actually race), and full HTTP
+integration tests against the real Express app — including login, role
+boundaries, ownership boundaries (a beekeeper can't see another's hives), and
+the verification-gate (an unverified beekeeper is blocked from harvesting
+until admin-approved). Tests use an isolated SQLite file under `backend/test/`,
+never the dev/demo database.
 
 ## Demo script (the "hero workflow")
 
@@ -245,7 +254,7 @@ an isolated SQLite file under `backend/test/`, never the dev/demo database.
 | Email verification / password reset | Not needed for a hackathon demo | Full account-recovery flow |
 | In-app staff account management | Only ever 1-2 lab/admin accounts needed; seed script is enough | An admin UI for provisioning staff accounts |
 | SQLite instead of Postgres | Zero-setup, zero native compilation | Postgres for real concurrent multi-cluster write load |
-| No batch split/merge genealogy | Deliberately trimmed from `mvp.txt`'s scope | Schema and event vocabulary already anticipate it (see `architecture.md`) |
+| No batch split/merge genealogy | Deliberately trimmed from `docs/mvp.txt`'s scope | Schema and event vocabulary already anticipate it (see `architecture.md`) |
 
 What **is** now enforced for real: login is required for every non-public route,
 role checks happen server-side (verified by trying the wrong role's action directly
@@ -256,8 +265,14 @@ cookie is httpOnly (client-side JS cannot read or exfiltrate it via XSS).
 
 ## What's deliberately out of scope for this MVP
 
-See `mvp.txt` for the full reasoning. Not built: real blockchain network, FPO/market
+See `docs/mvp.txt` for the full reasoning. Not built: real blockchain network, FPO/market
 layer, real lab integration, Madhukranti/KVIC API integration, batch split/merge
 genealogy, trained ML disease models, real IoT hardware (a simulation mode stands
 in). The data model and event schema are designed so these can be added later
 without a rewrite.
+
+## Team & License
+
+Built by **Team Odysseus** for SIH 2026, PS 26021. See [`TEAM.md`](TEAM.md) for
+members and mentors. Licensed under [MIT](LICENSE).
+
