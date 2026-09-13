@@ -16,7 +16,8 @@ ecosystem.
 **Team:** see [`TEAM.md`](TEAM.md). **Research base:** see [`docs/`](docs/) —
 these four documents (problem-statement analysis, prior-art survey, workflow/
 data-model research, and the MVP scope decision) are what `mvp.txt` and
-`architecture.md` are built on and reference throughout.
+`architecture.md` are built on and reference throughout. For where this
+project goes beyond the MVP, see [`docs/final-architecture.md`](docs/final-architecture.md).
 
 ## Roles
 

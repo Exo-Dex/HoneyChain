@@ -657,3 +657,11 @@ Not deployed anywhere yet, but the codebase doesn't fight a real deployment:
 - **Database**: `node:sqlite` is fine for a single-instance deployment; a
   multi-instance/horizontally-scaled deployment would need Postgres, since
   SQLite's file-based locking doesn't work across separate processes/machines.
+
+## 15. Where this goes next
+
+This document describes the MVP as built. For the full production vision this
+MVP is the foundation of — real IoT fleet, real permissioned blockchain,
+Madhukranti/KVIC/FSSAI integration, a beekeeper-to-buyer market layer, and a
+phased migration path from exactly where this codebase is today — see
+[`docs/final-architecture.md`](docs/final-architecture.md).
