@@ -22,5 +22,5 @@
 ---
 
 For the project write-up, architecture, and how to run it, see the root
-[`README.md`](README.md) and [`architecture.md`](architecture.md). For the
+[`README.md`](README.md) and [`mvp-architecture.md`](mvp-architecture.md). For the
 research this project is built on, see [`docs/`](docs/).

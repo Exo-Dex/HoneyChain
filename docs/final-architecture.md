@@ -4,7 +4,7 @@
 
 This document sketches what Honey Chain becomes beyond the MVP — the full,
 production-scale system the research in `docs/` was aiming at all along. The
-MVP (`architecture.md`) is not a prototype we'd throw away and rebuild; it's
+MVP (`mvp-architecture.md`) is not a prototype we'd throw away and rebuild; it's
 the proven core that this document extends outward from. Every section below
 says explicitly what's inherited unchanged versus what's new.
 
@@ -92,7 +92,7 @@ This matters as much as what's new — it's why the MVP wasn't throwaway work:
    └────────────────────────────────────────────────────────┘
 ```
 
-This is a genuine evolution of the MVP diagram in `architecture.md` §2, not a
+This is a genuine evolution of the MVP diagram in `mvp-architecture.md` §2, not a
 different system: the "Service Layer" boxes above are what
 `backend/routes/*.js` grows into once there's enough load/team size to
 justify splitting a monolith into services; Postgres replaces `node:sqlite`
@@ -134,7 +134,7 @@ demo fallback** ("Simulation Mode", explicitly called for in `docs/mvp.txt`
 §9 for exactly the reason stated there: hardware fails five minutes before a
 demo). Production hives run real sensors; a sandbox/demo environment still
 runs the simulator. The ingestion service is what `POST /api/hives/:id/readings`
-becomes (already listed as an extension point in `architecture.md` §11) — same
+becomes (already listed as an extension point in `mvp-architecture.md` §11) — same
 row shape, real signing/auth added at the gateway.
 
 ---
@@ -184,7 +184,7 @@ hard part, not the chain itself:
 | Lab oracle | Certified lab's signed test result | `quality.js`'s simulated record, explicitly labeled as such |
 | Institutional oracle | KVIC/NBB officer action (e.g. beekeeper verification) | `routes/admin.js`'s `/verify` endpoint - already the right *shape*, just not yet backed by a real credentialed officer identity |
 
-**On-chain vs off-chain** is unchanged from `architecture.md` §5's table -
+**On-chain vs off-chain** is unchanged from `mvp-architecture.md` §5's table -
 full event data on-chain, telemetry/large documents off-chain with hash
 commitments. This discipline is *more* important at real-blockchain scale,
 not less: Fabric block size and throughput are finite resources in a way a
@@ -243,11 +243,11 @@ still sees the complete, unbroken provenance.
 
 ## 9. Data model additions
 
-Everything in `architecture.md` §3 stays. Final form adds:
+Everything in `mvp-architecture.md` §3 stays. Final form adds:
 
 ```text
 Batch genealogy (docs/deep-search_honeyChain.txt §15, listed as an extension
-point in architecture.md §11):
+point in mvp-architecture.md §11):
    BATCH_SPLIT: one batch → many child batches (different jars from one harvest)
    BATCH_MERGED: many batches → one (aggregating multiple small harvests)
 
@@ -270,7 +270,7 @@ redesign of the ledger itself.
 
 ## 10. Full actor × permission model
 
-Extending `architecture.md` §4's route matrix with the actors identified in
+Extending `mvp-architecture.md` §4's route matrix with the actors identified in
 `docs/deep-search_honeyChain.txt` §24-25:
 
 | Actor | Creates | Verifies | Views |
@@ -284,7 +284,7 @@ Extending `architecture.md` §4's route matrix with the actors identified in
 | Buyer | Orders | — | Public + purchased batch detail |
 | Consumer | — | — | Public provenance only |
 
-This is a refinement of the MVP's 3-role model (`architecture.md` §4), not a
+This is a refinement of the MVP's 3-role model (`mvp-architecture.md` §4), not a
 replacement — Beekeeper/Lab/Admin map onto Beekeeper/Processor/Cluster Admin
 above with the same ownership-scoping principle (`assertOwnsHive`-style
 checks) extended to more actor types.
@@ -373,7 +373,7 @@ Phase 0 (done)   MVP: 3-role auth, hash-chain ledger, simulated IoT/AI,
 
 Phase 1          Real IoT: swap simulator.js for real ESP32 fleet via the
                  ingestion-service extension point already designed in
-                 architecture.md §11. AI models trained on the resulting
+                 mvp-architecture.md §11. AI models trained on the resulting
                  real telemetry (still same output contract).
 
 Phase 2          Madhukranti/KVIC integration: Integration Service adapters,

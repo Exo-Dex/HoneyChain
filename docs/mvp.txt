@@ -1,14 +1,14 @@
-Exactly. **We should stop thinking about the full Honey Chain ecosystem for now.** The research we did is useful precisely because it lets us decide what *not* to build for the MVP.
+# Honey Chain — MVP Scope Decision
 
-For SIH, the goal at this stage should be:
+The research phase (see the other documents in this folder) covers the full
+Honey Chain ecosystem. This document narrows that down to what an SIH
+prototype should actually build. The goal at this stage is not a
+production-ready national platform:
 
-> **Build a small, believable vertical slice that demonstrates the core value of Honey Chain end-to-end.**
+> **Build a small, believable vertical slice that demonstrates the core
+> value of Honey Chain end-to-end.**
 
-Not a production-ready national platform.
-
-## Our MVP should prove one complete story
-
-I suggest we build this:
+## MVP flow
 
 ```text
              🍯 HONEY CHAIN MVP
@@ -44,13 +44,14 @@ I suggest we build this:
        "Verify this honey"
 ```
 
-That's enough to demonstrate **all three major PS requirements** without trying to implement the entire ecosystem.
+This is enough to demonstrate all three major PS requirements without
+implementing the entire ecosystem.
 
 ---
 
 # 1. What the MVP must demonstrate
 
-I'd reduce PS 26021 to **three demo capabilities**.
+PS 26021 reduces to three demo capabilities.
 
 ### Capability 1 — Traceable honey batch
 
@@ -69,7 +70,7 @@ That creates:
 Batch HC-2026-001
 ```
 
-The batch gets recorded on our blockchain.
+The batch gets recorded on the blockchain.
 
 ### Capability 2 — Smart hive
 
@@ -81,9 +82,8 @@ Humidity
 Weight
 ```
 
-We can initially use **simulated/recorded IoT data** rather than building a sophisticated physical IoT deployment.
-
-Then:
+Simulated/recorded IoT data stands in for a full physical IoT deployment at
+this stage. Then:
 
 ```text
 sensor data
@@ -97,7 +97,7 @@ Yield Prediction
 
 ### Capability 3 — Consumer verification
 
-Generate QR for:
+Generate a QR code for:
 
 ```text
 Batch HC-2026-001
@@ -123,15 +123,13 @@ Blockchain Record: ✓
 [View Traceability]
 ```
 
-That's a **complete story**.
+That is a complete story end to end.
 
 ---
 
-# 2. What we should deliberately NOT build yet
+# 2. What the MVP deliberately does not build
 
-This is just as important.
-
-For MVP:
+This is as important as what it does build.
 
 | Feature                      |                MVP? |
 | ----------------------------- | -------------------: |
@@ -158,13 +156,13 @@ For MVP:
 | Multi-chain architecture     |                   ❌ |
 | Production-grade IoT fleet   |                   ❌ |
 
-We should have **one polished path rather than 25 half-working modules.**
+One polished path is worth more than twenty-five half-working modules.
 
 ---
 
-# 3. The MVP's "hero workflow"
+# 3. The MVP's hero workflow
 
-This should become the scenario you demo to judges.
+This is the scenario to demo to judges.
 
 ### Step 1 — Beekeeper
 
@@ -187,8 +185,6 @@ Expected harvest:
 42.8 kg
 ```
 
----
-
 ### Step 2 — Open Hive H-001
 
 ```text
@@ -205,11 +201,8 @@ Status:
 🟢 Healthy
 ```
 
-And a graph showing the last 24 hours/day.
-
-We can use **realistic recorded/mock sensor telemetry** initially.
-
----
+With a graph of the last 24 hours/day, using realistic recorded/mock sensor
+telemetry.
 
 ### Step 3 — AI recommendation
 
@@ -230,9 +223,7 @@ Estimated honey yield:
 Confidence: 84%
 ```
 
-We should label this as a **prediction**, not fact.
-
----
+Labeled explicitly as a prediction, not a fact.
 
 ### Step 4 — Harvest
 
@@ -248,13 +239,13 @@ Quantity: 8.0 kg
 [Create Batch]
 ```
 
-System generates:
+The system generates:
 
 > **HC-MH-2026-0001**
 
 ---
 
-# 4. This is where blockchain earns its place
+# 4. Where blockchain earns its place
 
 When the batch is created:
 
@@ -266,7 +257,7 @@ Blockchain transaction
 Transaction hash
 ```
 
-Our UI can show:
+The UI shows:
 
 ```text
 Blockchain Status
@@ -280,19 +271,18 @@ TX:
 0x8f3a....92c1
 ```
 
-We don't need a gigantic blockchain system.
+A gigantic blockchain system isn't necessary for the MVP — only proof that:
 
-For MVP, we only need to demonstrate:
-
-> **A traceability event was written to a blockchain and can be independently verified.**
+> **A traceability event was written to a blockchain and can be
+> independently verified.**
 
 ---
 
-# 5. Then simulate the post-harvest journey
+# 5. Simulating the post-harvest journey
 
-This is where we can make the MVP look much bigger than it actually is.
+This is where the MVP can look bigger than it actually is.
 
-Create a few buttons:
+A few buttons drive the state forward:
 
 ```text
 Batch HC-MH-2026-0001
@@ -310,9 +300,7 @@ Batch HC-MH-2026-0001
 ✓ QR activated
 ```
 
-Each is an event.
-
-The user sees:
+Each is an event. The user sees:
 
 ```text
           TRACEABILITY
@@ -330,15 +318,13 @@ The user sees:
 07 Sep ─ QR Activated
 ```
 
-That visually demonstrates the core blockchain concept beautifully.
+That visually demonstrates the core blockchain concept clearly.
 
 ---
 
-# 6. We don't need a real laboratory for the MVP
+# 6. No real laboratory needed for the MVP
 
-This is an important scope decision.
-
-For the demo we can have:
+An important scope decision. For the demo:
 
 ```text
 Quality Test
@@ -350,13 +336,9 @@ C4 Sugar       3.1 %
 Status: PASS
 ```
 
-And clearly indicate:
-
-> **Demo / simulated laboratory record**
-
-We must **not present generated values as actual laboratory results**.
-
-The point of this MVP feature is to demonstrate the data flow:
+Clearly labeled as a **demo / simulated laboratory record** — generated
+values must never be presented as actual laboratory results. The point of
+this feature is to demonstrate the data flow:
 
 ```text
 Lab record
@@ -370,15 +352,13 @@ Blockchain
 QR
 ```
 
-Not to pretend that our laptop is an accredited food laboratory.
+not to claim the prototype is an accredited food laboratory.
 
 ---
 
-# 7. The QR page is probably our strongest demo
+# 7. The QR page as the strongest demo moment
 
-Judge scans QR.
-
-They see:
+A judge scans the QR code and sees:
 
 # 🍯 Honey Chain
 
@@ -414,15 +394,13 @@ And:
 
 > **Blockchain verification ✓**
 
-That's immediately understandable to a non-technical judge.
+Immediately understandable to a non-technical judge.
 
 ---
 
-# 8. Keep the AI extremely focused
+# 8. Keeping the AI narrowly scoped
 
-We don't need three research-grade AI systems.
-
-For MVP I'd choose:
+Three research-grade AI systems are not necessary. For the MVP:
 
 ### AI #1 — Hive anomaly / health score
 
@@ -441,7 +419,8 @@ Health Score: 82/100
 Status: Healthy
 ```
 
-We can initially use a simple ML/anomaly model or even a rules-plus-ML architecture, depending on available data.
+A simple rules-based or rules-plus-ML approach is sufficient, depending on
+available data.
 
 ### AI #2 — Honey yield prediction
 
@@ -461,30 +440,25 @@ Output:
 Expected yield: 8.2 kg
 ```
 
-That's enough.
+That's sufficient for the MVP.
 
-### Disease detection?
+### Disease detection
 
-I'd **leave full disease classification out of the MVP** unless we already have a suitable dataset/model.
-
-Instead:
+Full disease classification is left out of the MVP scope unless a suitable
+dataset/model already exists. Instead:
 
 ```text
 ⚠️ Abnormal hive pattern detected.
 Inspection recommended.
 ```
 
-That's much easier to defend scientifically.
+This is easier to defend scientifically than a disease-name diagnosis.
 
 ---
 
-# 9. We can make the IoT prototype extremely simple
+# 9. Keeping the IoT prototype simple
 
-You don't need 50 smart hives.
-
-One physical prototype is enough.
-
-Something like:
+Fifty smart hives are not required — one physical prototype is enough:
 
 ```text
 ESP32
@@ -510,19 +484,12 @@ Database
 Dashboard
 ```
 
-But we can also provide a:
-
-> **"Simulation Mode"**
-
-for the demo.
-
-That is important because hardware can randomly decide to die **five minutes before judging**. 😭
+A **Simulation Mode** should also exist for the demo — hardware can fail
+minutes before judging, and the demo should not depend on it working.
 
 ---
 
-# 10. Our MVP architecture can therefore be surprisingly small
-
-Something like:
+# 10. A small MVP architecture
 
 ```text
                     FRONTEND
@@ -551,13 +518,9 @@ Something like:
         ESP32 / Simulator
 ```
 
-That's it.
-
 ---
 
-# 11. The database can also stay small
-
-For MVP:
+# 11. A small MVP database
 
 ```text
 users
@@ -625,13 +588,13 @@ batch_id
 qr_token
 ```
 
-That is enough to create the entire demo.
+This is enough to build the entire demo.
 
 ---
 
-# 12. What the MVP proves to the evaluator
+# 12. What the MVP proves to an evaluator
 
-At the end, we should be able to say:
+The demo narrative is:
 
 > **"Let me demonstrate one batch of honey."**
 
@@ -661,13 +624,13 @@ QR
 Consumer
 ```
 
-That's the entire PS in **one live vertical slice**.
+The entire PS demonstrated in one live vertical slice.
 
 ---
 
-# 13. Most importantly: make the MVP extensible
+# 13. Building the MVP for extensibility
 
-We should build the MVP so that these can later be plugged in:
+The MVP should be built so these can be added later without a rewrite:
 
 ```text
 MVP
@@ -684,22 +647,27 @@ MVP
  └── nationwide deployment
 ```
 
-But **none of those need to exist now**.
-
-The architecture merely shouldn't prevent them later.
+None of these need to exist now. The architecture merely shouldn't prevent
+them later.
 
 ---
 
-# 14. Our MVP definition
-
-I'd formally freeze the scope as:
+# 14. MVP definition
 
 > ### **Honey Chain MVP**
 >
-> A prototype that allows a verified beekeeper to monitor a hive using IoT/simulated data, receive AI-assisted hive insights, record a honey harvest, create a traceable batch, record its subsequent processing and quality events, anchor those events to a blockchain, and allow a consumer to scan a QR code to verify the batch's provenance.
+> A prototype that allows a verified beekeeper to monitor a hive using
+> IoT/simulated data, receive AI-assisted hive insights, record a honey
+> harvest, create a traceable batch, record its subsequent processing and
+> quality events, anchor those events to a blockchain, and allow a consumer
+> to scan a QR code to verify the batch's provenance.
 
-That's a **very achievable MVP**, while still satisfying the spirit of every major requirement in PS 26021.
+This is an achievable MVP that satisfies the spirit of every major
+requirement in PS 26021. The prior research gives it a solid basis:
+Madhukranti provides the precedent for beekeeper/honey-chain registration,
+KVIC Honey Mission provides the beneficiary/beekeeping context, FSSAI
+provides the quality-data vocabulary, and GS1's event-based traceability
+model gives a defensible way to structure the batch journey.
 
-And the research we've already done gives us a very solid basis for it: Madhukranti provides the precedent for beekeeper/honey-chain registration, KVIC Honey Mission provides the beneficiary/beekeeping context, FSSAI provides the quality-data vocabulary, and GS1's event-based traceability model gives us a defensible way to structure the batch journey.
-
-**So from this point, I would treat "full Honey Chain" as the future roadmap and "this vertical slice" as Team Odysseus' actual current product.**
+From this point, "full Honey Chain" (see `docs/final-architecture.md`) is the
+future roadmap; this vertical slice is Team Odysseus' actual current product.

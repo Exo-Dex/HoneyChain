@@ -1,14 +1,12 @@
-**we now have enough evidence to start reconstructing the real Honey Chain workflow rather than designing it from the SIH description alone.**
+# Honey Chain — Workflow & Data Research
 
-The most important finding is that the ecosystem already has a surprisingly concrete institutional structure. **Honey Chain should therefore be designed as an integration layer, not as a replacement for KVIC/NBB/FSSAI systems.**
+This document reconstructs the real Honey Chain workflow from institutional
+evidence, rather than designing it from the SIH description alone. The
+central finding: the ecosystem already has a concrete institutional
+structure. **Honey Chain should therefore be designed as an integration
+layer, not as a replacement for KVIC/NBB/FSSAI systems.**
 
----
-
-# Honey Chain — Workflow & Data Research v2
-
-## 0. The system we're actually studying
-
-The end-to-end ecosystem looks approximately like this:
+## 0. The system under study
 
 ```text
                     GOVERNMENT / INSTITUTIONS
@@ -52,79 +50,42 @@ The end-to-end ecosystem looks approximately like this:
                        MARKET / FPO
 ```
 
-But let's break that down properly.
-
 ---
 
-# 1. Government architecture first
+# 1. Government architecture
 
-The **National Beekeeping & Honey Mission (NBHM)** is not simply one department operating one scheme.
+The **National Beekeeping & Honey Mission (NBHM)** is not a single
+department. Its 2020 operational guidelines establish a multi-level
+structure involving the National Bee Board, state agriculture/horticulture
+departments, district committees, KVIC, ICAR, SAUs/CAUs, FPOs,
+cooperatives, NAFED, NDDB, TRIFED, food-processing agencies, FSSAI, APEDA,
+and others. The national-level steering structure included representatives
+from MSME, FSSAI, APEDA, KVIC, ICAR, MoFPI, Rural Development, Tribal
+Affairs and others.
 
-Its 2020 operational guidelines explicitly establish a multi-level structure involving:
-
-* National Bee Board
-* state agriculture/horticulture departments
-* district committees
-* KVIC
-* ICAR
-* SAUs/CAUs
-* FPOs
-* cooperatives
-* NAFED
-* NDDB
-* TRIFED
-* food-processing agencies
-* FSSAI
-* APEDA
-* etc.
-
-The national-level steering structure itself included representatives from **MSME, FSSAI, APEDA, KVIC, ICAR, MoFPI, Rural Development, Tribal Affairs and others**.
-
-That tells us something important:
-
-### Honey Chain is inherently a multi-stakeholder system.
-
-There isn't one "Honey Authority" doing everything.
+**Honey Chain is inherently a multi-stakeholder system.** There is no
+single "Honey Authority" performing every function.
 
 ---
 
 # 2. The three NBHM layers
 
-The official NBHM guidelines divide the mission into three Mini Missions:
-
 ### MM-I — Production & productivity
 
-Includes:
-
-* scientific beekeeping
-* bee colonies
-* bee breeders
-* training
-* disease diagnostics
-* beekeeper registration
-* traceability/blockchain
-* technology adoption
-* cluster development
+Scientific beekeeping, bee colonies, bee breeders, training, disease
+diagnostics, beekeeper registration, traceability/blockchain, technology
+adoption, cluster development.
 
 ### MM-II — Post-harvest
 
-Includes:
-
-* collection
-* processing
-* storage
-* marketing
-* value addition
-* processing plants
-* testing facilities
-* branding
-* export
+Collection, processing, storage, marketing, value addition, processing
+plants, testing facilities, branding, export.
 
 ### MM-III — Research & technology
 
-This is where advanced technology, region-specific research and technology generation sit.
+Advanced technology, region-specific research, technology generation.
 
-So our proposed system maps beautifully onto this:
+This maps directly onto the proposed system:
 
 ```text
 MM-I
@@ -144,18 +105,15 @@ Analytics + AI + Research + Technology
 
 # 3. Beekeeper onboarding
 
-Now let's look at the actual beekeeper.
+KVIC's Honey Mission is built around training, distribution of live
+colonies and bee boxes, toolkits, and technical handholding. The current
+KVIC guideline describes 10-day skill-development training, normally 20
+candidates per batch, followed by practical support for colony
+multiplication and honey extraction. Each beneficiary is provided 10 bee
+boxes with live colonies, a toolkit and foundation sheets under the
+specified assistance structure. ([KVI Online][1])
 
-KVIC's Honey Mission is designed around:
-
-* training
-* distribution of live colonies and bee boxes
-* toolkits
-* technical handholding
-
-The current KVIC guideline describes **10-day skill-development training**, normally 20 candidates per batch, followed by practical support for colony multiplication and honey extraction. Each beneficiary is provided **10 bee boxes with live colonies**, a toolkit and foundation sheets under the specified assistance structure. ([KVI Online][1])
-
-So a Honey Chain onboarding process could logically begin:
+A logical Honey Chain onboarding flow:
 
 ```text
 Potential beekeeper
@@ -173,9 +131,7 @@ NBB/Madhukranti registration
 Active beekeeper
 ```
 
-### Data we need to represent
-
-At minimum:
+### Minimum beekeeper data
 
 ```text
 Beekeeper
@@ -194,50 +150,34 @@ NBB_registration_id
 KVIC_beneficiary_id
 ```
 
-But some of these fields are **our proposed integration fields**, not necessarily fields currently exposed by every government system.
-
-We need to distinguish those carefully.
+Some of these fields are proposed integration fields rather than fields
+currently exposed by every government system, and that distinction needs to
+be maintained carefully.
 
 ---
 
 # 4. Madhukranti — the existing digital backbone
 
-This is where things become particularly interesting.
+Madhukranti was created specifically for "traceability of the source of
+honey and other beehive products." Government material describes the
+intended database as covering stakeholders involved in honey production,
+sales, marketing, hive production, and other parts of the value chain.
+([Press Information Bureau][2])
 
-Madhukranti was created specifically for:
-
-> **traceability of the source of honey and other beehive products.**
-
-Government material describes the intended database as covering stakeholders involved in:
-
-* honey production
-* sales
-* marketing
-* hive production
-* other parts of the value chain. ([Press Information Bureau][2])
-
-The portal was launched on **7 April 2021**, with Indian Bank as the technical/banking partner. ([Press Information Bureau][2])
-
-And the government's 2025 update says that, as of **14 October 2025**, approximately:
-
-* 14,859 beekeepers
-* 269 beekeeping/honey societies
-* 150 firms
-* 206 companies
-
-were registered with NBB on Madhukranti. ([Press Information Bureau][3])
+The portal launched on 7 April 2021, with Indian Bank as the
+technical/banking partner. ([Press Information Bureau][2]) As of 14 October
+2025, approximately 14,859 beekeepers, 269 beekeeping/honey societies, 150
+firms, and 206 companies were registered with NBB on Madhukranti. ([Press
+Information Bureau][3])
 
 ---
 
-# 5. What Madhukranti is supposed to capture
+# 5. What Madhukranti captures
 
-A particularly useful government description says the portal was intended to:
-
-> create a database of stakeholders involved in honey and other hive-product production, sales and marketing.
-
-The planned system also included capturing honey sales transactions through a mobile application. ([IAS Gyan][4])
-
-That gives us this conceptual data structure:
+Government material describes the portal as intended to create a database
+of stakeholders involved in honey and other hive-product production, sales
+and marketing, with the planned system also capturing honey sales
+transactions through a mobile application. ([IAS Gyan][4])
 
 ```text
 Madhukranti
@@ -252,92 +192,49 @@ Madhukranti
      └── Sales
 ```
 
-This is critical because **Honey Chain should not invent a parallel beekeeper registry if it can integrate with this identity layer.**
+**Honey Chain should not invent a parallel beekeeper registry if it can
+integrate with this identity layer.**
 
 ---
 
-# 6. Actual beekeeper information
+# 6. Observed beekeeper registration fields
 
-We found a very useful real-world implementation of Madhukranti registration in Haryana.
+A real-world implementation of Madhukranti registration in Haryana exposes
+the following fields:
 
-The registration interface exposes fields including:
+**Personal:** Family/PPP ID, name, DOB, photograph, gender, PIN code,
+mobile, email, district, block, village, father/husband name, category,
+qualification, beekeeping experience.
 
-### Personal
+**Beekeeping:** number of bee colonies, intention to increase colonies,
+FPO/cooperative/SHG membership.
 
-* Family/PPP ID
-* name
-* DOB
-* photograph
-* gender
-* PIN code
-* mobile
-* email
-* district
-* block
-* village
-* father/husband name
-* category
-* qualification
-* beekeeping experience
+**Business:** business address.
 
-### Beekeeping
-
-* number of bee colonies
-* intention to increase colonies
-* FPO/cooperative/SHG membership
-
-### Business
-
-* business address
-
-### Nominee
-
-* nominee name
-* DOB
-* relationship
+**Nominee:** nominee name, DOB, relationship.
 
 ([Horticulture Department Haryana][5])
 
-**Important:** this is a state implementation linked to Madhukranti, so we should treat it as an **observable implementation example**, not automatically as the definitive national Madhukranti schema.
-
-Still, it gives us an excellent indication of the kind of master data we should accommodate.
+This is a state implementation linked to Madhukranti, and should be treated
+as an observable implementation example rather than the definitive national
+Madhukranti schema — it is nonetheless a strong indication of the master
+data to accommodate.
 
 ---
 
-# 7. Hive / colony identity is critical
+# 7. Hive/colony identity
 
-Here's a very interesting discovery.
+The Haryana Madhukranti-linked system requires individual bee boxes to have
+identification, serial numbers, and traceability records, and requires
+verified bee boxes for eligibility under its honey scheme. ([Horticulture
+Department Haryana][5]) Older Madhukranti material also contains an
+explicit bee-colony verification form, recording applicant, address,
+mobile, online application number, colonies applied for, colonies found,
+verification officer, officer contact, verification date, and signatures.
+([Scribd][6])
 
-The Haryana Madhukranti-linked system requires individual bee boxes to have:
-
-* identification
-* serial numbers
-* traceability records
-
-and requires verified bee boxes for eligibility under its honey scheme. ([Horticulture Department Haryana][5])
-
-The older Madhukranti material also contains an explicit **bee-colony verification form**, recording:
-
-* applicant
-* address
-* mobile
-* online application number
-* colonies applied for
-* colonies found
-* verification officer
-* officer contact
-* verification date
-* signatures. ([Scribd][6])
-
-This gives us a very important entity:
-
-# `Hive / Colony`
-
-Not just:
-
-> beekeeper owns 20 colonies.
-
-But:
+This establishes `Hive / Colony` as a distinct entity — not "beekeeper owns
+20 colonies" but:
 
 ```text
 Beekeeper
@@ -349,13 +246,11 @@ Beekeeper
    └── Hive H020
 ```
 
-And each hive should have its own lifecycle.
+Each hive has its own lifecycle.
 
 ---
 
 # 8. Proposed hive master record
-
-Based on the government workflow + what smart-beekeeping systems require, our **Honey Chain hive entity** should probably support:
 
 ```text
 Hive
@@ -377,30 +272,15 @@ registration_reference
 sensor_node_id
 ```
 
-Potential species:
-
-* *Apis mellifera*
-* *Apis cerana*
-
-The NBHM documentation itself distinguishes these species in its beekeeping infrastructure. ([Horticulture TG][7])
+Relevant species: *Apis mellifera*, *Apis cerana*. The NBHM documentation
+distinguishes these species in its beekeeping infrastructure. ([Horticulture
+TG][7])
 
 ---
 
-# 9. Apiary is another entity we shouldn't overlook
+# 9. Apiary as a distinct entity
 
-There is a difference between:
-
-**beekeeper**
-
-and
-
-**apiary/location**
-
-and
-
-**hive**.
-
-One beekeeper can have:
+Beekeeper, apiary/location, and hive are distinct entities:
 
 ```text
 Beekeeper P001
@@ -416,21 +296,15 @@ Beekeeper P001
             └── Hive H006
 ```
 
-This matters because bees may be moved to different floral sources.
-
-Therefore:
-
-### Location should be an event, not just a static hive field.
+Bees may be moved between floral sources, so **location should be an event,
+not just a static hive field.**
 
 ---
 
 # 10. Hive migration
 
-This is a surprisingly important aspect of Indian beekeeping.
-
-NBB has historically recognized the need to facilitate **movement/migration of bee colonies to bee-friendly locations**. ([Scribd][8])
-
-Therefore:
+NBB has historically recognized the need to facilitate movement/migration
+of bee colonies to bee-friendly locations. ([Scribd][8])
 
 ```text
 Hive H001
@@ -446,11 +320,8 @@ Migration event
 Location C
 ```
 
-The blockchain shouldn't simply store:
-
-> current_location = C
-
-It should preserve:
+The blockchain should not simply store `current_location = C` — it should
+preserve the movement itself:
 
 ```text
 MOVED
@@ -461,15 +332,11 @@ authorized_by
 reason
 ```
 
-That's genuine traceability.
+That is genuine traceability.
 
 ---
 
 # 11. IoT belongs to the hive, not the batch
-
-Now we reach the smart-beekeeping layer.
-
-Conceptually:
 
 ```text
 Hive
@@ -483,8 +350,6 @@ Hive
        └── Battery
 ```
 
-Then:
-
 ```text
 Sensor
  ↓
@@ -495,25 +360,9 @@ Cloud
 Analytics
 ```
 
-The important data model distinction is:
-
-### Sensor observation ≠ blockchain event
-
-You might receive:
-
-```text
-H001
-2026-09-05 14:00
-Temperature = 31.7°C
-Humidity = 67%
-Weight = 34.2kg
-```
-
-every five minutes.
-
-**Do not put all of that directly on-chain.**
-
-Instead:
+A key data-model distinction: **sensor observation ≠ blockchain event.** A
+hive might report temperature/humidity/weight every five minutes — this
+should not go directly on-chain:
 
 ```text
 Raw telemetry
@@ -531,23 +380,12 @@ Blockchain
 
 ---
 
-# 12. What AI should actually consume
+# 12. What AI should consume
 
-The NBB disease material makes clear that colony problems are affected by:
-
-* season
-* weather
-* colony strength
-* food availability
-* hygiene
-* queen condition
-* parasites
-* disease
-* environmental conditions.
-
-Therefore an AI system shouldn't depend on one sensor.
-
-A useful feature vector could become:
+NBB disease material makes clear that colony problems are affected by
+season, weather, colony strength, food availability, hygiene, queen
+condition, parasites, disease, and environmental conditions. An AI system
+should therefore not depend on a single sensor:
 
 ```text
 Hive H001
@@ -565,8 +403,6 @@ Historical yield
 Inspection records
 ```
 
-Then:
-
 ```text
                   AI
                    │
@@ -578,13 +414,13 @@ Then:
 
 ---
 
-# 13. AI disease output should NOT say "disease confirmed"
+# 13. AI disease output should not assert "disease confirmed"
 
-This is an important design decision.
-
-The official NBB material describes field inspection and diagnosis for diseases and recommends inspection/isolation/appropriate control measures. For example, certain disease identification involves visual symptoms and inspection rather than simply sensor telemetry.
-
-Therefore our AI should say:
+Official NBB material describes field inspection and diagnosis for
+diseases, recommending inspection/isolation/appropriate control measures —
+disease identification generally involves visual symptoms and inspection
+rather than sensor telemetry alone. AI output should therefore be phrased
+as:
 
 ```text
 🟢 Normal
@@ -596,21 +432,15 @@ Therefore our AI should say:
 🔴 Critical — inspection recommended
 ```
 
-rather than:
-
-> **"Hive H001 has American foulbrood."**
-
-Unless an appropriate diagnostic process has confirmed it.
-
-That distinction will make your solution much more credible to an agricultural expert.
+rather than "Hive H001 has American foulbrood," unless an appropriate
+diagnostic process has confirmed it. This distinction makes the solution
+considerably more credible to an agricultural expert.
 
 ---
 
-# 14. Harvest is the bridge between Hive and Honey
+# 14. Harvest as the bridge between hive and honey
 
-This may ultimately become the **most important entity in our entire database.**
-
-Because:
+Potentially the most important entity in the entire database:
 
 ```text
 Hive
@@ -619,8 +449,6 @@ HARVEST EVENT
    ↓
 Honey Batch
 ```
-
-Example:
 
 ```text
 Harvest HVT-001
@@ -645,15 +473,13 @@ Beekeeper:
 P001
 ```
 
-Now the batch has **provenance**.
+The batch now has provenance.
 
 ---
 
 # 15. Batch genealogy
 
-But we can't stop there.
-
-A batch can be:
+A batch can be split, mixed, processed, or packaged:
 
 ### Split
 
@@ -694,59 +520,41 @@ Processed B001-P
 Jar1   Jar2   Jar3
 ```
 
-This is exactly why **event-based traceability** is more powerful than simply having a `batch` table.
-
-GS1's traceability model formalizes this using **Critical Tracking Events (CTEs)** and **Key Data Elements (KDEs)**. CTEs include events such as harvesting, transformation, shipping, receiving and selling; KDEs describe who/what/where/when/why. ([GS1][9])
+This is why event-based traceability is more powerful than a simple `batch`
+table. GS1's traceability model formalizes this using Critical Tracking
+Events (CTEs) and Key Data Elements (KDEs). CTEs include events such as
+harvesting, transformation, shipping, receiving and selling; KDEs describe
+who/what/where/when/why. ([GS1][9])
 
 ---
 
-# 16. We should borrow this CTE/KDE model
-
-This is one of the strongest architectural findings from the research.
-
-For Honey Chain:
+# 16. Adopting the CTE/KDE model
 
 | CTE               | Honey Chain interpretation |
-| ----------------- | ---------------------------- |
-| Beginning of life | Honey batch created            |
-| Transformation    | Processing                       |
-| Shipping          | Batch dispatched                   |
-| Receiving         | Processor/buyer receives             |
-| Packaging         | Consumer product created               |
-| Sale              | Product sold                             |
-| Disposal          | Recalled/rejected product                  |
+| ------------------ | ---------------------------- |
+| Beginning of life  | Honey batch created            |
+| Transformation     | Processing                       |
+| Shipping           | Batch dispatched                   |
+| Receiving          | Processor/buyer receives             |
+| Packaging          | Consumer product created               |
+| Sale               | Product sold                             |
+| Disposal           | Recalled/rejected product                  |
 
-Each event should contain KDEs:
-
-```text
-WHO
-WHAT
-WHERE
-WHEN
-WHY
-```
-
-GS1 explicitly recommends uniquely identifying the object, parties and locations and associating events with time and location. ([GS1][10])
-
-This gives us an excellent foundation for our blockchain schema.
+Each event carries KDEs: WHO, WHAT, WHERE, WHEN, WHY. GS1 recommends
+uniquely identifying the object, parties and locations, and associating
+events with time and location. ([GS1][10]) This is a strong foundation for
+the blockchain schema.
 
 ---
 
 # 17. Processing
 
-The official NBHM guidelines give us a very useful picture of what happens here.
-
-Honey processing can involve:
-
-* moisture reduction
-* cleaning
-* wax separation
-* preparation for sale
-* quality management.
-
-The guidelines note that honey harvested under Indian conditions can have high moisture and that processing may be required to bring it to the applicable standard; they also explicitly connect processing facilities to beekeepers, organizations and FPOs.
-
-Therefore:
+Official NBHM guidelines describe honey processing as involving moisture
+reduction, cleaning, wax separation, preparation for sale, and quality
+management. Honey harvested under Indian conditions can have high moisture,
+and processing may be required to bring it to the applicable standard; the
+guidelines explicitly connect processing facilities to beekeepers,
+organizations and FPOs.
 
 ```text
 Raw honey
@@ -774,37 +582,17 @@ process_type
 
 # 18. Laboratory testing
 
-This deserves its own subsystem.
-
-FSSAI currently maintains an official **Manual of Methods of Analysis for Honey and Other Beehive Products**. The manual covers methods for:
-
-* specific gravity
-* moisture
-* reducing sugars
-* sucrose
-* fructose/glucose ratio
-* ash
-* acidity
-* HMF
-* diastase
-* water-insoluble matter
-* pollen/plant elements
-* proline
-* electrical conductivity
-* 2-AFGP as a rice-syrup marker
-* C4 sugar
-* isotope-ratio parameters
-* foreign oligosaccharides
-
-and other bee products.
-
-That's a gold mine for our data model.
+FSSAI maintains an official Manual of Methods of Analysis for Honey and
+Other Beehive Products, covering methods for specific gravity, moisture,
+reducing sugars, sucrose, fructose/glucose ratio, ash, acidity, HMF,
+diastase, water-insoluble matter, pollen/plant elements, proline,
+electrical conductivity, 2-AFGP as a rice-syrup marker, C4 sugar,
+isotope-ratio parameters, foreign oligosaccharides, and other bee products
+— a substantial basis for the data model.
 
 ---
 
-# 19. A Honey Test record
-
-We can therefore model:
+# 19. A honey test record
 
 ```text
 LabTest
@@ -838,11 +626,7 @@ certificate_id
 certificate_hash
 ```
 
-But here's an important design principle:
-
-### We shouldn't invent "pure/fake" from our own AI.
-
-Instead:
+**Design principle: don't invent "pure/fake" from AI.** Instead:
 
 ```text
 Measured parameters
@@ -854,31 +638,21 @@ Conformance assessment
 Test report
 ```
 
-The current FSSAI honey standard specifies, for example, maximum moisture of **20%**, maximum HMF of **80 mg/kg**, maximum C4 sugar of **7%**, and other parameters. ([FSSAI Mail][11])
+The current FSSAI honey standard specifies, for example, maximum moisture
+of 20%, maximum HMF of 80 mg/kg, and maximum C4 sugar of 7%, among other
+parameters. ([FSSAI Mail][11])
 
 ---
 
-# 20. The laboratory itself becomes a trusted actor
+# 20. The laboratory as a trusted actor
 
-FSSAI's ecosystem already has:
+FSSAI's ecosystem already includes Food Business Operators, Food Analysts,
+food laboratories, sampling processes, and laboratory reports. FoSCoS
+provides systems for FBO licensing and registration, application tracking,
+laboratory-related workflows and authority functions. ([Foscos][12])
 
-* Food Business Operators
-* Food Analysts
-* food laboratories
-* sampling processes
-* laboratory reports.
-
-FoSCoS provides systems for FBO licensing and registration, application tracking, laboratory-related workflows and authority functions. ([Foscos][12])
-
-So our system should not allow:
-
-```text
-beekeeper → "Lab test passed" → blockchain
-```
-
-without an authoritative actor.
-
-Instead:
+The system should not allow "beekeeper → 'Lab test passed' → blockchain"
+without an authoritative actor:
 
 ```text
 Sample
@@ -896,27 +670,21 @@ Certificate hash
 Blockchain
 ```
 
-That's a much stronger trust model.
+A substantially stronger trust model.
 
 ---
 
 # 21. Packaging
 
-FSSAI's labelling framework requires important information such as:
+FSSAI's labelling framework requires information including name of food,
+FSSAI information, net quantity, lot/batch identification, date marking,
+manufacturer/packer/brand-owner information, and other prescribed
+declarations. A lot/code/batch number is explicitly the identification mark
+by which food can be traced through manufacture and distribution.
+([FSSAI][13])
 
-* name of food
-* FSSAI information
-* net quantity
-* lot/batch identification
-* date marking
-* manufacturer/packer/brand-owner information
-* other prescribed declarations.
-
-In particular, a **lot/code/batch number** is explicitly the identification mark by which food can be traced through manufacture and distribution. ([FSSAI][13])
-
-This means our QR code should **not replace the batch number**.
-
-It should be linked to it.
+The QR code should not replace the batch number — it should be linked to
+it:
 
 ```text
 Physical label
@@ -930,9 +698,7 @@ Honey Chain digital identity
 
 ---
 
-# 22. QR → digital product identity
-
-The consumer experience becomes:
+# 22. QR as digital product identity
 
 ```text
                     QR
@@ -954,36 +720,20 @@ The consumer experience becomes:
      Beekeeper
 ```
 
-But we should **not expose private beekeeper information** unnecessarily.
-
-Consumer view might say:
-
-> Verified producer from Pune district
-
-rather than showing:
-
-> Full name + phone number + address.
+Private beekeeper information should not be exposed unnecessarily. A
+consumer view might say "Verified producer from Pune district" rather than
+full name, phone number, and address.
 
 ---
 
 # 23. FPO / market layer
 
-The government ecosystem explicitly promotes FPOs and collective structures.
-
-The NBHM guidelines include:
-
-* FPOs
-* SHGs
-* cooperatives
-* federations
-
-as institutional mechanisms for strengthening beekeepers.
-
-The 2025 government update says **97 beekeeper/honey-producer FPOs** had been registered/formed by March 2025 out of the relevant 100-FPO allocation. ([Press Information Bureau][3])
-
-NAFED has also developed Honey Corners to provide marketing support. ([Vamnicom][14])
-
-So:
+The NBHM guidelines include FPOs, SHGs, cooperatives, and federations as
+institutional mechanisms for strengthening beekeepers. As of the 2025
+government update, 97 beekeeper/honey-producer FPOs had been
+registered/formed by March 2025 out of the relevant 100-FPO allocation.
+([Press Information Bureau][3]) NAFED has also developed Honey Corners to
+provide marketing support. ([Vamnicom][14])
 
 ```text
 Beekeeper
@@ -997,230 +747,103 @@ Processing / Branding
 Market
 ```
 
-is a legitimate workflow.
+This is a legitimate workflow.
 
 ---
 
-# 24. This gives us our actor model
-
-I would currently define these actors:
+# 24. Actor model
 
 ### Government
 
-**NBB**
+**NBB:** beekeeper registration, traceability oversight, scheme
+coordination.
 
-* beekeeper registration
-* traceability oversight
-* scheme coordination
+**KVIC:** Honey Mission beneficiaries, training, equipment/colonies,
+handholding.
 
-**KVIC**
+**State/District authority:** verification, implementation, monitoring.
 
-* Honey Mission beneficiaries
-* training
-* equipment/colonies
-* handholding
-
-**State/District authority**
-
-* verification
-* implementation
-* monitoring
-
-**FSSAI / Food authorities**
-
-* food standards
-* licensing
-* testing ecosystem
-
----
+**FSSAI/Food authorities:** food standards, licensing, testing ecosystem.
 
 ### Supply chain
 
-**Beekeeper**
-
-**FPO / Cooperative**
-
-**Aggregator**
-
-**Processor**
-
-**Laboratory**
-
-**Packager / Brand owner**
-
-**Distributor / Trader**
-
-**Retailer**
-
----
+Beekeeper, FPO/Cooperative, Aggregator, Processor, Laboratory,
+Packager/Brand owner, Distributor/Trader, Retailer.
 
 ### Technology
 
-**IoT device**
-
-**Gateway**
-
-**AI engine**
-
-**Blockchain network**
-
----
+IoT device, Gateway, AI engine, Blockchain network.
 
 ### End user
 
-**Consumer**
+Consumer.
 
 ---
 
-# 25. Permission model is now starting to emerge
+# 25. Permission model
 
-This is where blockchain becomes genuinely interesting.
+| Actor     | Create           | Update          | Verify              | View               |
+| --------- | ---------------- | --------------- | -------------------- | ------------------- |
+| Beekeeper | Hive/harvest     | Own records     | —                     | Own                    |
+| KVIC      | Beneficiary      | Program records | Beneficiary             | Program                 |
+| NBB       | Registration     | Registration    | Beekeeper/colonies        | All authorized             |
+| FPO       | Aggregation      | Own batches     | —                            | Own                            |
+| Processor | Processing event | Processing data | —                               | Relevant batches                  |
+| Lab       | Test record      | Lab result      | Test                               | Authorized                          |
+| Admin     | Everything       | Everything      | Everything                            | Everything                            |
+| Consumer  | —                | —               | Product                                  | Public provenance                       |
 
-We can define:
-
-| Actor     | Create           | Update          | Verify             | View              |
-| --------- | ---------------- | --------------- | ------------------- | ------------------ |
-| Beekeeper | Hive/harvest     | Own records     | —                     | Own                   |
-| KVIC      | Beneficiary      | Program records | Beneficiary            | Program                |
-| NBB       | Registration     | Registration    | Beekeeper/colonies       | All authorized           |
-| FPO       | Aggregation      | Own batches     | —                          | Own                        |
-| Processor | Processing event | Processing data | —                            | Relevant batches              |
-| Lab       | Test record      | Lab result      | Test                            | Authorized                     |
-| Admin     | Everything       | Everything      | Everything                        | Everything                       |
-| Consumer  | —                | —               | Product                              | Public provenance                  |
-
-The important thing:
-
-### "Blockchain" does not mean everyone gets access to everything.
-
-We need **role-based access control + selective disclosure**.
+**Blockchain does not mean everyone gets access to everything.**
+Role-based access control and selective disclosure are required.
 
 ---
 
-# 26. Failure cases — this is where our architecture gets serious
+# 26. Failure cases
 
-Now let's deliberately break the system.
+### Failure 1 — Fake beekeeper
 
----
+Someone claims "I have 100 colonies" without basis.
 
-## Failure 1 — Fake beekeeper
+**Solution:** registration → physical/authority verification → verified
+colony count → identity activated. The Madhukranti colony-verification
+concept directly supports this. ([Scribd][6])
 
-Someone creates an account claiming:
+### Failure 2 — Sensor lies
 
-> "I have 100 colonies."
+Sensor reports 100 kg honey but actual hive weight is 30 kg.
 
-### Solution
+**Solution:** sensor calibration, anomaly detection, and periodic physical
+verification. Blockchain cannot solve faulty sensors.
 
-```text
-Registration
- ↓
-Physical/authority verification
- ↓
-Verified colony count
- ↓
-Identity activated
-```
+### Failure 3 — Fabricated harvest
 
-The Madhukranti workflow's colony verification concept directly supports this. ([Scribd][6])
+"Hive H001 produced 50 kg," unverified.
 
----
+**Solution:** require harvest evidence — hive association, timestamp,
+quantity, optional sensor corroboration, beekeeper declaration, later
+processing receipt. Confidence increases when independent evidence agrees.
 
-## Failure 2 — Sensor lies
+### Failure 4 — Batch mixing
 
-Sensor reports:
+`B001 + B002 → B003`.
 
-> 100 kg honey
+**Solution:** record transformation genealogy explicitly (`B003` has inputs
+`B001` and `B002`).
 
-but actual hive weight is 30 kg.
+### Failure 5 — Failed lab test
 
-### Solution
+A failed batch must not become "Verified ✓" — it should enter a
+`QUARANTINED` state, blocking downstream packaging.
 
-Sensor calibration + anomaly detection + periodic physical verification.
+### Failure 6 — Product recall
 
-Blockchain cannot solve faulty sensors.
-
----
-
-## Failure 3 — Beekeeper enters fake harvest
-
-> "Hive H001 produced 50 kg."
-
-### Solution
-
-Require harvest evidence:
-
-* hive association
-* timestamp
-* quantity
-* optional sensor corroboration
-* beekeeper declaration
-* later processing receipt
-
-Confidence increases when independent evidence agrees.
+Blockchain genealogy allows the affected descendants of a recalled batch to
+be identified — one of the strongest arguments for event-based
+traceability.
 
 ---
 
-## Failure 4 — Batch gets mixed
-
-```text
-B001 + B002 → B003
-```
-
-### Solution
-
-Record transformation genealogy.
-
-```text
-B003
- ├── input B001
- └── input B002
-```
-
----
-
-## Failure 5 — Failed lab test
-
-```text
-Batch B001
-    ↓
-LAB
-    ↓
-FAILED
-```
-
-It must not become:
-
-> Verified ✓
-
-The batch should enter:
-
-```text
-QUARANTINED
-```
-
-and downstream packaging should be blocked.
-
----
-
-## Failure 6 — Product recalled
-
-```text
-B001
- ↓
-1000 jars
- ↓
-Recall
-```
-
-The blockchain genealogy lets us identify the affected descendants.
-
-This is one of the strongest arguments for event-based traceability.
-
----
-
-# 27. Another major failure: blockchain immutability ≠ truth
-
-This deserves to be a Team Odysseus principle.
+# 27. Blockchain immutability is not truth
 
 ```text
            BAD DATA
@@ -1230,7 +853,7 @@ This deserves to be a Team Odysseus principle.
         IMMUTABLE BAD DATA
 ```
 
-So our trust pipeline should be:
+The trust pipeline should be:
 
 ```text
 REAL WORLD
@@ -1246,21 +869,13 @@ EVIDENCE
 BLOCKCHAIN
 ```
 
-This is why:
-
-* government verification
-* IoT authentication
-* lab certificates
-* digital signatures
-* role permissions
-
-matter more than simply deploying a blockchain.
+Government verification, IoT authentication, lab certificates, digital
+signatures, and role permissions matter more than simply deploying a
+blockchain.
 
 ---
 
-# 28. We can now define the core entities
-
-Our **first-pass conceptual data model** is looking like this:
+# 28. Core entities
 
 ```text
 PERSON / ORGANIZATION
@@ -1320,9 +935,8 @@ GOVERNMENT
 
 # 29. The event model
 
-Instead of building a blockchain around tables, I'd strongly recommend thinking in **events**.
-
-Our initial event vocabulary:
+Rather than building a blockchain around tables, the system should be
+thought of in events. Initial event vocabulary:
 
 ```text
 BEEKEEPER_REGISTERED
@@ -1350,13 +964,11 @@ PRODUCT_SOLD
 PRODUCT_RECALLED
 ```
 
-This is **much closer to what the blockchain should actually record**.
+This is much closer to what the blockchain should actually record.
 
 ---
 
-# 30. And each event gets a standard structure
-
-Something like:
+# 30. Standard event structure
 
 ```json
 {
@@ -1386,17 +998,14 @@ Something like:
 }
 ```
 
-That's conceptual, not our final schema yet.
-
-But it gives us the correct direction.
+This is conceptual rather than a final schema, but establishes the correct
+direction.
 
 ---
 
-# 31. What goes ON blockchain?
+# 31. What goes on-chain
 
-Now we can finally answer this with much more confidence.
-
-### ON-CHAIN
+### On-chain
 
 ```text
 Identity references
@@ -1413,7 +1022,7 @@ Timestamps
 Authorized signatures
 ```
 
-### OFF-CHAIN
+### Off-chain
 
 ```text
 IoT telemetry
@@ -1428,7 +1037,7 @@ Training records
 Detailed analytics
 ```
 
-### HYBRID
+### Hybrid
 
 ```text
 Lab certificate
@@ -1448,32 +1057,21 @@ periodic Merkle/hash commitment
 Blockchain
 ```
 
-This is starting to look like a serious architecture.
+This is the shape of a serious architecture.
 
 ---
 
-# 32. One very important discovery about Honey MIS
+# 32. Honey MIS
 
-KVIC actually has a live **Honey MIS** application.
+KVIC operates a live Honey MIS application, described by the official KVIC
+application portal as the "KVIC Honey Mission Information System — manage
+honey production, distribution and reporting." ([KVIC Apps][15]) An
+observable page from the system contains actual production/bottling
+inventory fields such as date, package size, opening balance, bottled
+honey received from production/bottling unit, total bottled honey, damaged
+bottles, honey issued to sales counter, and closing stock. ([KVIC Apps][16])
 
-The official KVIC application portal describes it as:
-
-> **"KVIC Honey Mission Information System — manage honey production, distribution and reporting."** ([KVIC Apps][15])
-
-And an observable page from the system contains actual production/bottling inventory fields such as:
-
-* date
-* package size
-* opening balance
-* bottled honey received from production/bottling unit
-* total bottled honey
-* damaged bottles
-* honey issued to sales counter
-* closing stock. ([KVIC Apps][16])
-
-This is **extremely useful**.
-
-It proves that an existing KVIC digital system already models at least part of:
+This proves an existing KVIC digital system already models part of:
 
 ```text
 Production
@@ -1485,22 +1083,19 @@ Inventory
 Sales counter
 ```
 
-Therefore Honey Chain should ideally **connect the upstream provenance to these downstream inventory processes**, rather than duplicate them blindly.
+Honey Chain should connect the upstream provenance to these downstream
+inventory processes rather than duplicating them.
 
 ---
 
-# 33. So our actual integration problem is becoming obvious
-
-Today, conceptually:
+# 33. The integration problem
 
 ```text
 Madhukranti
      │
-     │
      └── registration / traceability
 
 KVIC Honey MIS
-     │
      │
      └── production / bottling / inventory
 
@@ -1521,7 +1116,7 @@ Consumer
      └── needs trust
 ```
 
-### Honey Chain:
+Honey Chain's role:
 
 ```text
                   HONEY CHAIN
@@ -1540,121 +1135,41 @@ Consumer
                   SUPPLY CHAIN
 ```
 
-That's a **far stronger interpretation of PS 26021**.
+A far stronger interpretation of PS 26021.
 
 ---
 
-# 34. What I think our database should eventually contain
+# 34. Database domains
 
-Not the final schema yet — but these **domains**:
+Not the final schema, but the domains involved:
 
-### Identity
+**Identity:** User, Organization, Role, Beekeeper, FPO, Processor, Trader,
+Laboratory, Authority.
 
-```text
-User
-Organization
-Role
-Beekeeper
-FPO
-Processor
-Trader
-Laboratory
-Authority
-```
+**Beekeeping:** Apiary, Hive, Colony, Species, HiveMovement,
+HiveInspection, HealthObservation, DiseaseAlert, Sensor, SensorReading.
 
-### Beekeeping
+**Production:** Harvest, HarvestHive, HoneyBatch, BatchTransformation,
+BatchSplit, BatchMerge.
 
-```text
-Apiary
-Hive
-Colony
-Species
-HiveMovement
-HiveInspection
-HealthObservation
-DiseaseAlert
-Sensor
-SensorReading
-```
+**Processing:** ProcessingFacility, ProcessingEvent, StorageEvent,
+TransportEvent.
 
-### Production
+**Quality:** Lab, Sample, LabTest, TestParameter, TestResult, Certificate.
 
-```text
-Harvest
-HarvestHive
-HoneyBatch
-BatchTransformation
-BatchSplit
-BatchMerge
-```
+**Product:** Package, Product, QRIdentity, ProductActivation, Sale, Recall.
 
-### Processing
+**Government:** Registration, Verification, SchemeBeneficiary, Training,
+Certification, Compliance.
 
-```text
-ProcessingFacility
-ProcessingEvent
-StorageEvent
-TransportEvent
-```
+**Market:** FPO, Buyer, Order, MarketplaceListing, Transaction.
 
-### Quality
-
-```text
-Lab
-Sample
-LabTest
-TestParameter
-TestResult
-Certificate
-```
-
-### Product
-
-```text
-Package
-Product
-QRIdentity
-ProductActivation
-Sale
-Recall
-```
-
-### Government
-
-```text
-Registration
-Verification
-SchemeBeneficiary
-Training
-Certification
-Compliance
-```
-
-### Market
-
-```text
-FPO
-Buyer
-Order
-MarketplaceListing
-Transaction
-```
-
-### Blockchain
-
-```text
-BlockchainIdentity
-BlockchainEvent
-TransactionHash
-DocumentHash
-DigitalSignature
-```
+**Blockchain:** BlockchainIdentity, BlockchainEvent, TransactionHash,
+DocumentHash, DigitalSignature.
 
 ---
 
-# 35. The really interesting part: the "digital twin" idea
-
-We're beginning to see that Honey Chain could effectively maintain **two linked digital twins**.
+# 35. Two linked digital twins
 
 ### Hive digital twin
 
@@ -1687,7 +1202,7 @@ BATCH-001
 └── Consumer QR
 ```
 
-And the connection:
+Connected at the harvest event:
 
 ```text
              HIVE DIGITAL TWIN
@@ -1700,83 +1215,46 @@ And the connection:
                 CONSUMER
 ```
 
-**That could become the conceptual heart of Team Odysseus' architecture.**
+This could become the conceptual heart of the architecture.
 
 ---
 
-# 36. Where our actual novelty might lie
+# 36. Where the novelty lies
 
-After this research, I would **not** claim:
+This research does not support claiming to have invented blockchain honey
+traceability, smart hive monitoring, QR-based authentication, or AI disease
+detection — these already exist in different forms. The defensible novelty:
 
-❌ "We invented blockchain honey traceability."
+> **An India-specific, interoperable digital ecosystem that links
+> government-verified beekeeper/hive identities to harvest-level honey
+> provenance, laboratory evidence, AI-assisted hive intelligence and
+> consumer-verifiable product genealogy.**
 
-❌ "We invented smart hive monitoring."
+Specifically:
 
-❌ "We invented QR-based authentication."
+**1. Government-aware** — designed around the KVIC + NBB/Madhukranti +
+FSSAI + FPO ecosystem.
 
-❌ "We invented AI disease detection."
+**2. Hive-to-batch linkage** — not "this beekeeper produced honey" but
+"this batch originated from these verified hives during this harvest
+event."
 
-Those already exist in different forms.
+**3. Evidence-backed trust** — government verification + IoT evidence + lab
+evidence + supply-chain events → blockchain proof.
 
-Instead:
+**4. AI as recommendation, not authority** — risk/prediction/recommendation
+outputs, with authoritative actors performing verification.
 
-### Potential novelty:
-
-> **An India-specific, interoperable digital ecosystem that links government-verified beekeeper/hive identities to harvest-level honey provenance, laboratory evidence, AI-assisted hive intelligence and consumer-verifiable product genealogy.**
-
-And specifically:
-
-### 1. Government-aware
-
-Designed around:
-
-**KVIC + NBB/Madhukranti + FSSAI + FPO ecosystem**
-
-### 2. Hive-to-batch linkage
-
-Not just:
-
-> "This beekeeper produced honey."
-
-But:
-
-> **"This batch originated from these verified hives during this harvest event."**
-
-### 3. Evidence-backed trust
-
-```text
-Government verification
-       +
-IoT evidence
-       +
-Lab evidence
-       +
-Supply-chain events
-       ↓
-Blockchain proof
-```
-
-### 4. AI doesn't pretend to be an authority
-
-It produces:
-
-> **risk / prediction / recommendation**
-
-while authoritative actors perform verification.
-
-### 5. Rural deployment
-
-Cluster-based rather than expecting every beekeeper to independently operate a sophisticated cloud system.
+**5. Rural deployment** — cluster-based rather than requiring every
+beekeeper to independently operate a sophisticated cloud system.
 
 ---
 
-# 37. One more architectural insight
+# 37. Surveillance and disaster management
 
-The official NBHM guidelines explicitly say digitization and traceability should also support **bee surveillance and disaster management**.
-
-That's bigger than honey.
-
-Imagine:
+NBHM guidelines state that digitization and traceability should also
+support bee surveillance and disaster management — a scope larger than
+honey alone:
 
 ```text
 1,000 hives
@@ -1792,7 +1270,7 @@ Cluster-level outbreak
 Authorities alerted
 ```
 
-Or:
+or:
 
 ```text
 Regional weather event
@@ -1806,21 +1284,14 @@ Risk map
 Targeted intervention
 ```
 
-So the system can evolve from:
-
-**"Track my honey."**
-
-into:
-
-**"Understand the health and productivity of the beekeeping ecosystem."**
-
-That aligns directly with NBHM's stated objectives around data, surveillance and scientific beekeeping.
+The system can evolve from "track my honey" into "understand the health
+and productivity of the beekeeping ecosystem" — aligned directly with
+NBHM's stated objectives around data, surveillance, and scientific
+beekeeping.
 
 ---
 
-# 38. Our current end-to-end workflow
-
-I would now freeze this as **Workflow v0.1**:
+# 38. End-to-end workflow (v0.1)
 
 ```text
 ┌──────────────────────┐
@@ -1887,87 +1358,54 @@ I would now freeze this as **Workflow v0.1**:
 └──────────────────────┘
 ```
 
-And **every important transition becomes an auditable event**.
+Every important transition becomes an auditable event.
 
 ---
 
-# 39. Sources we should treat as our foundational research set
+# 39. Foundational research set
 
-I've deliberately prioritized primary/official material where possible:
+Primary/official sources prioritized throughout this document:
 
-* **National Bee Board — NBHM Operational Guidelines**: the most important source for institutional structure, objectives, implementation and traceability.
-* **NBB current website**: current institutional context and 2026 updates. ([NBB Recruit][17])
-* **PIB/NBB 2025 NBHM backgrounder**: current-scale data and Madhukranti/FPO status. ([Press Information Bureau][18])
-* **KVIC Honey Mission guidelines**: actual beneficiary/training/equipment workflow. ([KVI Online][1])
-* **KVIC Honey MIS**: evidence of existing production/bottling/inventory information flows. ([KVIC Apps][16])
-* **FSSAI Honey Analysis Manual**: authoritative analytical parameters and test methods.
+* **National Bee Board — NBHM Operational Guidelines**: institutional
+  structure, objectives, implementation, and traceability.
+* **NBB current website**: current institutional context and 2026 updates.
+  ([NBB Recruit][17])
+* **PIB/NBB 2025 NBHM backgrounder**: current-scale data and
+  Madhukranti/FPO status. ([Press Information Bureau][18])
+* **KVIC Honey Mission guidelines**: beneficiary/training/equipment
+  workflow. ([KVI Online][1])
+* **KVIC Honey MIS**: evidence of existing production/bottling/inventory
+  information flows. ([KVIC Apps][16])
+* **FSSAI Honey Analysis Manual**: authoritative analytical parameters and
+  test methods.
 * **FSSAI honey standard**: actual quality thresholds. ([FSSAI Mail][11])
-* **FSSAI labelling regulations**: batch/lot/date/product identification requirements. ([FSSAI][13])
-* **GS1 Traceability Standard**: CTE/KDE framework that gives us a rigorous basis for our event model. ([GS1][9])
+* **FSSAI labelling regulations**: batch/lot/date/product identification
+  requirements. ([FSSAI][13])
+* **GS1 Traceability Standard**: CTE/KDE framework underlying the event
+  model. ([GS1][9])
 
 ---
 
-## Where I think we should go next
+## Next steps
 
-**I would NOT move to coding yet.**
+The recommended next step is turning this research into a formal system
+specification, via four artifacts:
 
-We have reached the point where the next research step should be **turning this into a formal Honey Chain system specification**.
+**A. Actor × Permission Matrix** — exactly what beekeeper / KVIC / NBB /
+FPO / processor / lab / admin / consumer can create, read, verify, approve
+and modify.
 
-Specifically, I'd suggest we next construct **four artifacts together**:
+**B. Complete Event Dictionary** — for every event: actor, input, output,
+required fields, evidence, validation, on-chain/off-chain status, and
+failure states.
 
-### A. Actor × Permission Matrix
+**C. Complete Entity/Data Dictionary** — every field, datatype,
+relationship, and source for each entity (Beekeeper, Hive, Apiary, Harvest,
+Batch, Processing, Lab, Certificate, Package, QR, ...).
 
-Exactly what **beekeeper / KVIC / NBB / FPO / processor / lab / admin / consumer** can create, read, verify, approve and modify.
-
-### B. Complete Event Dictionary
-
-For every event:
-
-```text
-Event
-Actor
-Input
-Output
-Required fields
-Evidence
-Validation
-On-chain/off-chain
-Failure states
-```
-
-### C. Complete Entity/Data Dictionary
-
-Something like:
-
-```text
-Beekeeper
-Hive
-Apiary
-Harvest
-Batch
-Processing
-Lab
-Certificate
-Package
-QR
-...
-```
-
-with **every field**, datatype, relationship and source.
-
-### D. State Machines
-
-Especially:
-
-**Hive lifecycle**
-
-```text
-REGISTERED → VERIFIED → ACTIVE → MOVED → INSPECTION → RETIRED
-```
-
-and
-
-**Honey batch lifecycle**
+**D. State Machines** — particularly the hive lifecycle
+(`REGISTERED → VERIFIED → ACTIVE → MOVED → INSPECTION → RETIRED`) and the
+honey batch lifecycle:
 
 ```text
 CREATED → RECEIVED → PROCESSED → TESTING
@@ -1982,9 +1420,10 @@ CREATED → RECEIVED → PROCESSED → TESTING
               CONSUMED
 ```
 
-Once we have those four, **the blockchain architecture, database schema, APIs, IoT architecture, AI pipeline and UI will almost design themselves.**
-
-And importantly, we'll be able to say **exactly what Honey Chain adds over Madhukranti + Honey MIS**, which is going to be one of the most important questions an SIH evaluator can ask Team Odysseus.
+With those four in place, the blockchain architecture, database schema,
+APIs, IoT architecture, AI pipeline and UI follow directly — and the answer
+to "what does Honey Chain add over Madhukranti + Honey MIS" (one of the
+most important questions an SIH evaluator can ask) becomes concrete.
 
 [1]: https://kviconline.gov.in/pmegpeportalappdoc/DigitalKVICupload/43320231218130809.pdf?utm_source=chatgpt.com "Component IV: Beekeeping Activity/ Honey Mission Programme under Agro-Based & Food Processing Industries (ABFPI) vertical of Gramodyog Vikas Yojana(GVY):"
 [2]: https://static.pib.gov.in/WriteReadData/specificdocs/documents/2021/oct/doc2021102961.pdf?utm_source=chatgpt.com "Achievements in Horticulture Development and Strategic Approaches- Way Forward"
@@ -1998,10 +1437,7 @@ And importantly, we'll be able to say **exactly what Honey Chain adds over Madhu
 [8]: https://www.scribd.com/document/375338611/National-Bee-Board?utm_source=chatgpt.com "National Bee Board Overview and Support | PDF | Honey Bee | Beekeeper"
 [9]: https://www.gs1.org/standards/fresh-fruit-and-vegetable-traceability-guideline/current-standard?utm_source=chatgpt.com "Fresh Fruit and Vegetable Traceability Guideline | GS1"
 [10]: https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard?utm_source=chatgpt.com "GS1 Global Traceability Standard | GS1"
-[11]: https://mail.fssai.gov.in/upload/uploadfiles/files/Chapter%202_8%20%28Sweetening%20agents%20including%20Honey%29.pdf?utm_source=chatgpt.com "CHAPTER 2 
-FOOD PRODUCT STANDARDS 
- 
-2.8: Sweeteni"
+[11]: https://www.fssai.gov.in/upload/uploadfiles/files/9_%20Chapter%202_8%20(Sweetening%20agents%20including%20Honey).pdf "CHAPTER 2 - FOOD PRODUCT STANDARDS - 2.8: Sweetening agents including Honey"
 [12]: https://foscos.fssai.gov.in/about-flrs?utm_source=chatgpt.com "FoSCoS - FSSAI"
 [13]: https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf?utm_source=chatgpt.com "schedule II of these regulations. FSSAI may specify logo for any other food as decided from time to time."
 [14]: https://vamnicom.gov.in/uploads/b81bdb1fbf55a67331284968130c2dd8.pdf?utm_source=chatgpt.com "Cooperative Perspective"

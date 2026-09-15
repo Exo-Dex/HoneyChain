@@ -9,14 +9,14 @@ can enter anything into the traceability chain, mirroring the real Madhukranti/K
 verification workflow this project's research is built on.
 
 This is the scope frozen in `docs/mvp.txt` in the project research docs, since extended
-with real authentication/RBAC (see `architecture.md` §4 for the full design
+with real authentication/RBAC (see `mvp-architecture.md` §4 for the full design
 rationale) — deliberately a thin, complete slice rather than a wide, half-built
 ecosystem.
 
 **Team:** see [`TEAM.md`](TEAM.md). **Research base:** see [`docs/`](docs/) —
 these four documents (problem-statement analysis, prior-art survey, workflow/
 data-model research, and the MVP scope decision) are what `mvp.txt` and
-`architecture.md` are built on and reference throughout. For where this
+`mvp-architecture.md` are built on and reference throughout. For where this
 project goes beyond the MVP, see [`docs/final-architecture.md`](docs/final-architecture.md).
 
 ## Roles
@@ -143,7 +143,7 @@ Open http://localhost:5173 — you'll land on the login page.
 | Cluster Admin | `admin@honeychain.demo` | `admin12345` |
 
 Lab and Admin accounts are provisioned only via `db/seed.js` — there's no in-app
-"create staff account" UI (a deliberate scope call; see `architecture.md` §4).
+"create staff account" UI (a deliberate scope call; see `mvp-architecture.md` §4).
 Beekeepers self-register via the Register page and start unverified.
 
 You'll see an `ExperimentalWarning: SQLite is an experimental feature` line when the
@@ -255,7 +255,7 @@ never the dev/demo database.
 | Email verification / password reset | Not needed for a hackathon demo | Full account-recovery flow |
 | In-app staff account management | Only ever 1-2 lab/admin accounts needed; seed script is enough | An admin UI for provisioning staff accounts |
 | SQLite instead of Postgres | Zero-setup, zero native compilation | Postgres for real concurrent multi-cluster write load |
-| No batch split/merge genealogy | Deliberately trimmed from `docs/mvp.txt`'s scope | Schema and event vocabulary already anticipate it (see `architecture.md`) |
+| No batch split/merge genealogy | Deliberately trimmed from `docs/mvp.txt`'s scope | Schema and event vocabulary already anticipate it (see `mvp-architecture.md`) |
 
 What **is** now enforced for real: login is required for every non-public route,
 role checks happen server-side (verified by trying the wrong role's action directly

@@ -522,7 +522,7 @@ These were kept in mind while building so the MVP doesn't need a rewrite later:
 ```text
 honey-chain-mvp/
 ├── README.md                 # setup + demo script
-├── architecture.md           # this file
+├── mvp-architecture.md       # this file
 ├── backend/
 │   ├── .env.example           # JWT_SECRET, PORT, NODE_ENV, FRONTEND_ORIGIN
 │   ├── package.json
