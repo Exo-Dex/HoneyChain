@@ -1438,7 +1438,7 @@ most important questions an SIH evaluator can ask) becomes concrete.
 [9]: https://www.gs1.org/standards/fresh-fruit-and-vegetable-traceability-guideline/current-standard?utm_source=chatgpt.com "Fresh Fruit and Vegetable Traceability Guideline | GS1"
 [10]: https://www.gs1.org/standards/gs1-global-traceability-standard/current-standard?utm_source=chatgpt.com "GS1 Global Traceability Standard | GS1"
 [11]: https://www.fssai.gov.in/upload/uploadfiles/files/9_%20Chapter%202_8%20(Sweetening%20agents%20including%20Honey).pdf "CHAPTER 2 - FOOD PRODUCT STANDARDS - 2.8: Sweetening agents including Honey"
-[12]: https://foscos.fssai.gov.in/about-flrs?utm_source=chatgpt.com "FoSCoS - FSSAI"
+[12]: https://foscos.fssai.gov.in/about-foscos "Food Safety Compliance System (FoSCoS) is an... - FSSAI"
 [13]: https://www.fssai.gov.in/upload/uploadfiles/files/Compendium_Labelling_Display_23_09_2021.pdf?utm_source=chatgpt.com "schedule II of these regulations. FSSAI may specify logo for any other food as decided from time to time."
 [14]: https://vamnicom.gov.in/uploads/b81bdb1fbf55a67331284968130c2dd8.pdf?utm_source=chatgpt.com "Cooperative Perspective"
 [15]: https://apps.kvic.gov.in/?utm_source=chatgpt.com "KVIC Applications"
