@@ -1,8 +1,9 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/db');
-const { generateReadings } = require('../services/simulator');
+const { generateReadings, liveSimulator } = require('../services/simulator');
 const { enrichHive, enrichHiveSummary } = require('../services/hiveEnrichment');
+const { evaluateHiveReadings } = require('../services/alertEngine');
 const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
@@ -12,8 +13,6 @@ function assertOwnsHive(req, hive) {
   return req.user.role === 'admin' || hive.beekeeper_id === req.user.beekeeper_id;
 }
 
-// GET /api/hives - beekeepers see only their own hives; admins see everyone's;
-// lab has no reason to list hives directly (they work at the batch level).
 router.get('/', (req, res) => {
   if (req.user.role === 'lab') {
     return res.status(403).json({ error: 'Lab accounts work with batches, not hives directly.' });
@@ -21,17 +20,15 @@ router.get('/', (req, res) => {
 
   const hives = req.user.role === 'beekeeper'
     ? db.prepare('SELECT * FROM hives WHERE beekeeper_id = ?').all(req.user.beekeeper_id)
-    : db.prepare('SELECT * FROM hives').all(); // admin: cluster-wide view
+    : db.prepare('SELECT * FROM hives').all();
 
   res.json(hives.map(enrichHiveSummary));
 });
 
-// POST /api/hives - register a new hive for the LOGGED-IN beekeeper.
-// beekeeper_id/apiary_id are resolved server-side from the session, never
-// trusted from the request body (previously a client could register a hive
-// under any beekeeper_id it liked).
 router.post('/', requireRole('beekeeper'), (req, res) => {
-  const { species, simulate_profile } = req.body;
+  const { species, simulate_profile, telemetry_source, device_id } = req.body;
+  const profile = simulate_profile || 'healthy';
+  const source = telemetry_source === 'ESP32' ? 'ESP32' : 'SIMULATION';
 
   const apiary = db.prepare('SELECT id FROM apiaries WHERE beekeeper_id = ?').get(req.user.beekeeper_id);
   if (!apiary) {
@@ -42,25 +39,34 @@ router.post('/', requireRole('beekeeper'), (req, res) => {
   const installed_at = new Date().toISOString();
 
   db.prepare(`
-    INSERT INTO hives (id, apiary_id, beekeeper_id, species, status, installed_at)
-    VALUES (?, ?, ?, ?, 'ACTIVE', ?)
-  `).run(id, apiary.id, req.user.beekeeper_id, species || 'Apis cerana', installed_at);
+    INSERT INTO hives (id, apiary_id, beekeeper_id, species, status, sim_profile, telemetry_source, device_id, installed_at)
+    VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?)
+  `).run(id, apiary.id, req.user.beekeeper_id, species || 'Apis cerana', profile, source, device_id || null, installed_at);
 
-  // Seed simulated sensor history so the hive isn't empty on first view
-  const readings = generateReadings(id, 24, simulate_profile || 'healthy');
+  const readings = generateReadings(id, 24, profile);
   const insert = db.prepare(`
-    INSERT INTO sensor_readings (id, hive_id, timestamp, temperature, humidity, weight)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO sensor_readings (
+      id, hive_id, timestamp, temperature, humidity, weight,
+      acoustic_hz, foraging_rate, battery_pct, rssi_dbm, source, device_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const insertMany = db.transaction((rows) => {
-    for (const r of rows) insert.run(r.id, r.hive_id, r.timestamp, r.temperature, r.humidity, r.weight);
+    for (const r of rows) {
+      insert.run(
+        r.id, r.hive_id, r.timestamp, r.temperature, r.humidity, r.weight,
+        r.acoustic_hz ?? 215, r.foraging_rate ?? 48, r.battery_pct ?? 96, r.rssi_dbm ?? -68,
+        source, device_id || null
+      );
+    }
   });
   insertMany(readings);
 
-  res.status(201).json({ id, apiary_id: apiary.id, beekeeper_id: req.user.beekeeper_id, species, status: 'ACTIVE', installed_at });
+  const enriched = enrichHive({ id, apiary_id: apiary.id, beekeeper_id: req.user.beekeeper_id, species: species || 'Apis cerana', status: 'ACTIVE', sim_profile: profile, telemetry_source: source, device_id: device_id || null, installed_at });
+  evaluateHiveReadings(enriched, enriched.readings, enriched.health);
+
+  res.status(201).json({ id, apiary_id: apiary.id, beekeeper_id: req.user.beekeeper_id, species: species || 'Apis cerana', status: 'ACTIVE', sim_profile: profile, telemetry_source: source, device_id: device_id || null, installed_at });
 });
 
-// GET /api/hives/:id - full hive detail with readings + AI insight
 router.get('/:id', (req, res) => {
   const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
   if (!hive) return res.status(404).json({ error: 'Hive not found' });
@@ -72,8 +78,27 @@ router.get('/:id', (req, res) => {
   res.json(enrichHive(hive));
 });
 
-// POST /api/hives/:id/simulate - regenerate a fresh reading batch (demo convenience)
-router.post('/:id/simulate', requireRole('beekeeper'), (req, res) => {
+// POST /api/hives/:id/readings - Ingest actual ESP32 sensor reading for a specific hive
+router.post('/:id/readings', requireRole('beekeeper', 'admin'), (req, res) => {
+  const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
+  if (!hive) return res.status(404).json({ error: 'Hive not found' });
+  if (!assertOwnsHive(req, hive)) {
+    return res.status(403).json({ error: 'You do not have access to this hive.' });
+  }
+
+  try {
+    const result = liveSimulator.ingestHardwareReading({
+      ...req.body,
+      hive_id: hive.id,
+    }, req.ip);
+    res.status(201).json({ ok: true, result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/hives/:id/simulate - regenerate a fresh simulated reading batch
+router.post('/:id/simulate', requireRole('beekeeper', 'admin'), (req, res) => {
   const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
   if (!hive) return res.status(404).json({ error: 'Hive not found' });
   if (!assertOwnsHive(req, hive)) {
@@ -81,19 +106,46 @@ router.post('/:id/simulate', requireRole('beekeeper'), (req, res) => {
   }
 
   const profile = req.body.profile || 'healthy';
+  db.prepare("UPDATE hives SET sim_profile = ?, telemetry_source = 'SIMULATION' WHERE id = ?").run(profile, hive.id);
   db.prepare('DELETE FROM sensor_readings WHERE hive_id = ?').run(hive.id);
 
   const readings = generateReadings(hive.id, 24, profile);
   const insert = db.prepare(`
-    INSERT INTO sensor_readings (id, hive_id, timestamp, temperature, humidity, weight)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO sensor_readings (
+      id, hive_id, timestamp, temperature, humidity, weight,
+      acoustic_hz, foraging_rate, battery_pct, rssi_dbm, source, device_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'SIMULATION', NULL)
   `);
   const insertMany = db.transaction((rows) => {
-    for (const r of rows) insert.run(r.id, r.hive_id, r.timestamp, r.temperature, r.humidity, r.weight);
+    for (const r of rows) {
+      insert.run(
+        r.id, r.hive_id, r.timestamp, r.temperature, r.humidity, r.weight,
+        r.acoustic_hz ?? 215, r.foraging_rate ?? 48, r.battery_pct ?? 96, r.rssi_dbm ?? -68
+      );
+    }
   });
   insertMany(readings);
 
-  res.json({ ok: true, profile, count: readings.length });
+  const updatedHive = db.prepare('SELECT * FROM hives WHERE id = ?').get(hive.id);
+  const enriched = enrichHive(updatedHive);
+  const generatedAlerts = evaluateHiveReadings(updatedHive, enriched.readings, enriched.health);
+
+  liveSimulator.emit('tick', {
+    tick: liveSimulator.tickCount,
+    source: 'SIMULATION',
+    timestamp: new Date().toISOString(),
+    updates: [{
+      hive_id: hive.id,
+      telemetry_source: 'SIMULATION',
+      sim_profile: profile,
+      latest: enriched.readings[enriched.readings.length - 1],
+      health: enriched.health,
+      yield_prediction: enriched.yield_prediction,
+    }],
+    new_alerts: generatedAlerts,
+  });
+
+  res.json({ ok: true, profile, count: readings.length, health: enriched.health });
 });
 
 module.exports = router;

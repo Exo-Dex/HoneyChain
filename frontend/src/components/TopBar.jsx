@@ -2,9 +2,16 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_BY_ROLE = {
-  beekeeper: [{ to: '/beekeeper', label: 'My Apiary' }],
-  lab: [{ to: '/admin', label: 'Processing / Lab' }],
+  beekeeper: [
+    { to: '/analytics', label: 'Live Analytics' },
+    { to: '/beekeeper', label: 'My Apiary' },
+  ],
+  lab: [
+    { to: '/analytics', label: 'Live Analytics' },
+    { to: '/admin', label: 'Processing / Lab' },
+  ],
   admin: [
+    { to: '/analytics', label: 'Live Analytics' },
     { to: '/cluster', label: 'Cluster Alerts' },
     { to: '/ledger', label: 'Ledger' },
     { to: '/admin/approvals', label: 'Approvals' },
@@ -27,7 +34,7 @@ export default function TopBar() {
       <NavLink to="/" className="brand">
         <span className="emoji">🍯</span> Honey Chain
       </NavLink>
-      <div className="nav-links" style={{ alignItems: 'center' }}>
+      <div className="nav-links" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
         {links.map(link => (
           <NavLink key={link.to} to={link.to} className={({ isActive }) => (isActive ? 'active' : '')}>
             {link.label}

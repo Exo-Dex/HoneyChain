@@ -3,7 +3,7 @@ const BASE = '/api';
 async function request(path, options = {}) {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // send/receive the httpOnly session cookie
+    credentials: 'include',
     ...options,
   });
   const data = await res.json().catch(() => ({}));
@@ -32,6 +32,14 @@ export const api = {
   getHive: (id) => request(`/hives/${id}`),
   createHive: (body) => request('/hives', { method: 'POST', body: JSON.stringify(body) }),
   simulateHive: (id, profile) => request(`/hives/${id}/simulate`, { method: 'POST', body: JSON.stringify({ profile }) }),
+  postHiveReading: (id, body) => request(`/hives/${id}/readings`, { method: 'POST', body: JSON.stringify(body) }),
+
+  // Real-time stream, IoT hardware mode & analytics
+  getAnalytics: () => request('/analytics'),
+  controlStream: (body) => request('/stream/control', { method: 'POST', body: JSON.stringify(body) }),
+  getIotStatus: () => request('/iot/status'),
+  setIotMode: (body) => request('/iot/mode', { method: 'POST', body: JSON.stringify(body) }),
+  ingestEsp32Packet: (body) => request('/iot/ingest', { method: 'POST', body: JSON.stringify(body) }),
 
   // Harvests / Batches
   createHarvest: (body) => request('/harvests', { method: 'POST', body: JSON.stringify(body) }),
@@ -46,10 +54,13 @@ export const api = {
     request(`/batches/${batchId}/activate-qr`, { method: 'POST', body: JSON.stringify({}) }),
   verifyBatchIntegrity: (id) => request(`/batches/${id}/verify`),
 
-  // Consumer (public, but credentials:'include' is harmless if no cookie exists)
+  // Consumer
   verifyProduct: (qrToken) => request(`/verify/${qrToken}`),
 
-  // Alerts / Ledger explorer (admin only)
+  // Alerts / Ledger explorer
   getAlerts: () => request('/alerts'),
+  acknowledgeAlert: (id) => request(`/alerts/${id}/acknowledge`, { method: 'POST' }),
+  resolveAlert: (id, note) => request(`/alerts/${id}/resolve`, { method: 'POST', body: JSON.stringify({ note }) }),
+  updateAlertThresholds: (thresholds) => request('/alerts/thresholds', { method: 'PUT', body: JSON.stringify(thresholds) }),
   getLedger: (limit = 100) => request(`/ledger?limit=${limit}`),
 };

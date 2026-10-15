@@ -1,11 +1,6 @@
 const db = require('../db/db');
 const { computeHealthScore, predictYield } = require('./ai');
 
-/**
- * Given a hive row, attach its latest sensor readings, computed health score,
- * and yield prediction. Shared by routes/hives.js and routes/alerts.js so the
- * "what counts as healthy/attention/critical" logic lives in exactly one place.
- */
 function enrichHive(hive) {
   const readings = db.prepare(
     'SELECT * FROM sensor_readings WHERE hive_id = ? ORDER BY timestamp ASC'
@@ -13,16 +8,26 @@ function enrichHive(hive) {
 
   const health = computeHealthScore(readings);
   const yield_prediction = predictYield(readings, health);
+  const latest = readings.length > 0 ? readings[readings.length - 1] : null;
 
-  return { ...hive, readings, health, yield_prediction };
+  return { ...hive, readings, latest_reading: latest, health, yield_prediction };
 }
 
-/**
- * Lightweight version for list views - skips returning the full readings array.
- */
 function enrichHiveSummary(hive) {
   const { readings, ...rest } = enrichHive(hive);
-  return { ...rest, health_status: rest.health.status, health_score: rest.health.score };
+  const sparkline = readings.slice(-12).map(r => ({
+    timestamp: r.timestamp,
+    temperature: r.temperature,
+    humidity: r.humidity,
+    weight: r.weight,
+    acoustic_hz: r.acoustic_hz,
+  }));
+  return {
+    ...rest,
+    health_status: rest.health.status,
+    health_score: rest.health.score,
+    sparkline,
+  };
 }
 
 module.exports = { enrichHive, enrichHiveSummary };

@@ -11,8 +11,9 @@ import ConsumerScan from './pages/ConsumerScan';
 import ClusterAlerts from './pages/ClusterAlerts';
 import LedgerExplorer from './pages/LedgerExplorer';
 import AdminApprovals from './pages/AdminApprovals';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 
-const HOME_BY_ROLE = { beekeeper: '/beekeeper', lab: '/admin', admin: '/cluster' };
+const HOME_BY_ROLE = { beekeeper: '/analytics', lab: '/admin', admin: '/analytics' };
 
 function RootRedirect() {
   const { user, loading } = useAuth();
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
+            <Route path="/analytics" element={<ProtectedRoute roles={['beekeeper', 'lab', 'admin']}><AnalyticsDashboard /></ProtectedRoute>} />
             <Route path="/beekeeper" element={<ProtectedRoute roles={['beekeeper']}><BeekeeperDashboard /></ProtectedRoute>} />
             <Route path="/beekeeper/hives/:hiveId" element={<ProtectedRoute roles={['beekeeper', 'admin']}><HiveDetail /></ProtectedRoute>} />
 
@@ -42,7 +44,6 @@ export default function App() {
             <Route path="/ledger" element={<ProtectedRoute roles={['admin']}><LedgerExplorer /></ProtectedRoute>} />
             <Route path="/admin/approvals" element={<ProtectedRoute roles={['admin']}><AdminApprovals /></ProtectedRoute>} />
 
-            {/* Fully public - no login needed to scan and verify a product */}
             <Route path="/scan" element={<ConsumerScan />} />
             <Route path="/scan/:qrToken" element={<ConsumerScan />} />
             <Route path="/verify/:qrToken" element={<ConsumerScan />} />
